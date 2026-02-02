@@ -1,1 +1,1 @@
-### Repository ini digunakan untuk belajar bahasa pemrograman PHP Dasar
+### Repository ini digunakan untuk laporan setiap hari kepada mentor.
