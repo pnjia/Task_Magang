@@ -1,9 +1,17 @@
 <?php
 include 'database.php';
 
+$emailErr = "";
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $nama = $_POST['nama'];
-    $email = $_POST['email'];
+    
+    if (filter_var($_POST['email'], FILTER_VALIDATE_EMAIL)) {
+        $email = $_POST['email'];
+    } else {
+        $emailErr = "Format email tidak valid.";
+        $email = "";
+    }
     $telepon = $_POST['telepon'];
     $alamat = $_POST['alamat'];
     $tanggal_lahir = $_POST['tanggal_lahir'];
@@ -50,6 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email:</label>
                                 <input type="email" class="form-control" id="email" name="email" required>
+                                <span class="text-danger"><?= $emailErr ?></span>
                             </div>
 
                             <div class="mb-3">
