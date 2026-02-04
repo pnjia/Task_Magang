@@ -1,0 +1,24 @@
+[90m= [39m[34;4mApp\Models\User[39;24m {#6373
+    [34mid[39m: "[32mdbecf7ea-2415-4391-bce3-9da8cf981f3c[39m",
+    [34mtenant_id[39m: [36mnull[39m,
+    [34mname[39m: "[32mAdmin Toko[39m",
+    [34memail[39m: "[32madmin@komputer.com[39m",
+    [34memail_verified_at[39m: [36mnull[39m,
+    #[33mpassword[39m: "[32m$2y$12$e2AwEW1HYYtVEcqy/thTHeCc7GTn9/fWjBdYOiZIc2rR4dXYeYwp6[39m",
+    #[33mremember_token[39m: [36mnull[39m,
+    [34mcreated_at[39m: "[32m2026-02-04 08:30:08[39m",
+    [34mupdated_at[39m: "[32m2026-02-04 08:30:08[39m",
+  }
+
+[90m= [39m[34;4mApp\Models\User[39;24m {#6523
+    [34mid[39m: "[32mdbecf7ea-2415-4391-bce3-9da8cf981f3c[39m",
+    [34mtenant_id[39m: [36mnull[39m,
+    [34mname[39m: "[32mAdmin Toko[39m",
+    [34memail[39m: "[32madmin@komputer.com[39m",
+    [34memail_verified_at[39m: [36mnull[39m,
+    #[33mpassword[39m: "[32m$2y$12$e2AwEW1HYYtVEcqy/thTHeCc7GTn9/fWjBdYOiZIc2rR4dXYeYwp6[39m",
+    #[33mremember_token[39m: [36mnull[39m,
+    [34mcreated_at[39m: "[32m2026-02-04 08:30:08[39m",
+    [34mupdated_at[39m: "[32m2026-02-04 08:30:08[39m",
+  }
+

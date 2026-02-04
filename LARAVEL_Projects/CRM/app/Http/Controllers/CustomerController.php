@@ -9,9 +9,14 @@ use Illuminate\Validation\Rule;
 class CustomerController extends Controller
 {
     //
-    public function index() 
+    public function index(Request $request) 
     {
-        $customers = Customer::latest()->get();
+        $search = $request->input('search');
+
+        $customers = Customer::query()->when($search, function ($query, $search) {
+            return $query->where('name', 'like', "%{$search}%")->orwhere('phone_number', 'like', "%{$search}%");
+        })->latest()->paginate(10);
+        
         return view('customers.index', compact('customers'));
     }
 

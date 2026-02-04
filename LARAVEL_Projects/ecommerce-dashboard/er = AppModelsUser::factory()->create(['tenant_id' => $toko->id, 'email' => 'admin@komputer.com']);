@@ -1,0 +1,8 @@
+[90m= [39m[34;4mApp\Models\Tenant[39;24m {#5832
+    [34mname[39m: "[32mToko Komputer[39m",
+    [34mslug[39m: "[32mtoko-komputer[39m",
+    [34mid[39m: "[32mfac3dc1f-957c-40ac-b676-380a15f0e2cc[39m",
+    [34mupdated_at[39m: "[32m2026-02-04 08:17:15[39m",
+    [34mcreated_at[39m: "[32m2026-02-04 08:17:15[39m",
+  }
+

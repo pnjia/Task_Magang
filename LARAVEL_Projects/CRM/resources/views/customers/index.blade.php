@@ -8,18 +8,35 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold text-gray-700">Database Pelanggan</h3>
-                    <a href="{{ route('customers.create') }}" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition font-semibold">
-                        + Tambah Pelanggan
-                    </a>
-                </div>
+
 
                 @if(session('success'))
                     <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
                         {{ session('success') }}
                     </div>
                 @endif
+
+                <div class="flex justify-between items-center mb-6 gap-4">
+                    <h3 class="text-lg font-bold text-gray-700">Database Pelanggan</h3>
+                    
+                    <div class="flex gap-2">
+                        <form action="{{ route('customers.index') }}" method="GET" class="flex gap-2">
+                            <input type="text" 
+                                name="search" 
+                                placeholder="Cari nama / HP..." 
+                                value="{{ request('search') }}"
+                                class="border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2 text-sm"
+                            >
+                            <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 text-sm">
+                                Cari
+                            </button>
+                        </form>
+
+                        <a href="{{ route('customers.create') }}" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 text-sm flex items-center">
+                            + Tambah
+                        </a>
+                    </div>
+                </div>
 
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -59,6 +76,10 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
+
+                <div class="mt-4">
+                    {{ $customers->withQueryString()->links() }}
                 </div>
                 
                 @if($customers->isEmpty())
