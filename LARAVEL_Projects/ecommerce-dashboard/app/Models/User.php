@@ -3,15 +3,15 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids; // <--- 1. WAJIB IMPORT INI
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use  HasFactory, Notifiable, HasUuid; // <--- 2. Pasang Trait di sini
+    use HasFactory, Notifiable, HasUuids; // <--- 2. WAJIB PASANG DI SINI
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +22,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',      // Pastikan ada
+        'tenant_id', // Pastikan ada
     ];
 
     /**
@@ -47,7 +49,14 @@ class User extends Authenticatable
         ];
     }
 
-    public function tenant() {
-        return $this->belongsTo(Tenant::class);
+    // Helper Role (Opsional, tapi berguna)
+    public function hasRole($role)
+    {
+        return $this->role === $role;
+    }
+
+    public function isOwner()
+    {
+        return $this->role === 'owner';
     }
 }

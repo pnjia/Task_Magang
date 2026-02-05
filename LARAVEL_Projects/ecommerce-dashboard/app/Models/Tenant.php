@@ -2,26 +2,31 @@
 
 namespace App\Models;
 
-use App\Traits\HasUuid;
+// 1. Ganti import ini (Gunakan bawaan Laravel)
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Tenant extends Model
 {
-    //
-    use HasFactory, HasUuid;
+    // 2. Pasang Trait HasUuids bawaan
+    use HasFactory, HasUuids;
 
     protected $fillable = ['name', 'slug', 'address'];
 
-    public function users() {
+    // Relasi-relasi di bawah ini sudah benar, biarkan saja
+    public function users()
+    {
         return $this->hasMany(User::class);
     }
 
-    public function products() {
+    public function products()
+    {
         return $this->hasMany(Product::class);
     }
 
-    public function categories() {
+    public function categories()
+    {
         return $this->hasMany(Category::class);
     }
 }
