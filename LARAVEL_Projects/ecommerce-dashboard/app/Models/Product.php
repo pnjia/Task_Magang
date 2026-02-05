@@ -2,34 +2,30 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToTenant;
-use App\Traits\HasUuid;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory; // <--- 1. IMPORT INI
+use App\Models\Scopes\BelongsToTenant;
 
 class Product extends Model
 {
-    //
-    use HasFactory, HasUuid, BelongsToTenant;
+    // 2. PASANG HasFactory DI SINI
+    use HasFactory, HasUuids, BelongsToTenant;
 
     protected $fillable = [
         'category_id',
         'name',
         'slug',
-        'image',
-        'description',
         'price',
         'stock',
+        'description',
+        'image',
         'is_active',
+        'tenant_id'
     ];
 
-    protected $casts = [
-        'price' => 'decimal:2',
-        'is_active' => 'boolean',
-        'stock' => 'integer',
-    ];
-
-    public function category() {
+    public function category()
+    {
         return $this->belongsTo(Category::class);
     }
 }

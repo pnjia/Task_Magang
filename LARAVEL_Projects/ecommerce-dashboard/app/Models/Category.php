@@ -2,19 +2,20 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToTenant;
-use App\Traits\HasUuid;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory; // <--- 1. IMPORT INI
+use App\Models\Scopes\BelongsToTenant;
 
 class Category extends Model
 {
-    //
-    use HasFactory, HasUuid, BelongsToTenant;
+    // 2. PASANG HasFactory DI SINI
+    use HasFactory, HasUuids, BelongsToTenant;
 
-    protected $fillable = ['name', 'slug'];
+    protected $fillable = ['name', 'slug', 'tenant_id'];
 
-    public function products() {
+    public function products()
+    {
         return $this->hasMany(Product::class);
     }
 }
