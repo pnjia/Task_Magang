@@ -1,0 +1,13 @@
+[90m= [39m[34;4mApp\Models\User[39;24m {#6071
+    [34mid[39m: "[32me97e2a8b-ed6b-40cc-8bb9-c16a3f37f9b9[39m",
+    [34mtenant_id[39m: [36mnull[39m,
+    [34mname[39m: "[32mToko Komputer[39m",
+    [34memail[39m: "[32madmin@komputer.com[39m",
+    [34mrole[39m: "[32mstaff[39m",
+    [34memail_verified_at[39m: [36mnull[39m,
+    #[33mpassword[39m: "[32m$2y$12$QdkAS5SRykKiDdEmyyqERuA/6FFBXehTkWfMy0CfPsRrUJ41xynlO[39m",
+    #[33mremember_token[39m: [36mnull[39m,
+    [34mcreated_at[39m: "[32m2026-02-05 04:44:01[39m",
+    [34mupdated_at[39m: "[32m2026-02-05 04:44:01[39m",
+  }
+
