@@ -96,16 +96,18 @@
                                                 Edit
                                             </a>
 
-                                            <form action="{{ route('products.destroy', $product->id) }}" method="POST"
-                                                class="inline-block"
-                                                onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini? Data yang dihapus tidak bisa dikembalikan.');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit"
-                                                    class="text-red-600 hover:text-red-900 font-semibold">
-                                                    Hapus
-                                                </button>
-                                            </form>
+                                            @can('delete-product')
+                                                <form action="{{ route('products.destroy', $product->id) }}" method="POST"
+                                                    class="inline-block"
+                                                    onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini? Data yang dihapus tidak bisa dikembalikan.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit"
+                                                        class="text-red-600 hover:text-red-900 font-semibold">
+                                                        Hapus
+                                                    </button>
+                                                </form>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @empty

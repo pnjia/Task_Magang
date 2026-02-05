@@ -52,11 +52,30 @@
                             </div>
 
                             <div class="space-y-3">
-                                <div>
+                                <div x-data="{
+                                    displayPrice: '',
+                                    actualPrice: 0,
+                                    formatRupiah(value) {
+                                        // Hapus semua karakter non-digit
+                                        let number = value.replace(/\D/g, '');
+                                        this.actualPrice = number;
+                                
+                                        // Format dengan titik sebagai pemisah ribuan
+                                        if (number) {
+                                            this.displayPrice = 'Rp ' + parseInt(number).toLocaleString('id-ID');
+                                        } else {
+                                            this.displayPrice = '';
+                                        }
+                                    }
+                                }">
                                     <label class="block text-sm font-medium text-gray-700">Harga (Rp)</label>
-                                    <input type="number" name="price" min="0"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm py-2"
-                                        required>
+                                    <div class="relative">
+                                        <input type="text" x-model="displayPrice"
+                                            @input="formatRupiah($event.target.value)" placeholder="Rp 0"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm py-2">
+                                    </div>
+                                    <input type="hidden" name="price" x-model="actualPrice" required>
+                                    <p class="text-xs text-gray-500 mt-1">Contoh: Rp 10.000 atau Rp 1.000.000</p>
                                 </div>
 
                                 <div>
