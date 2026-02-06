@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Traits\BelongsToTenant;
+use App\Models\Scopes\BelongsToTenant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
@@ -10,6 +10,8 @@ class Transaction extends Model
 {
     //
     use HasUuids, BelongsToTenant;
+
+    protected $guarded = ['id'];
 
     protected $fillable = [
         'tenant_id',
@@ -31,6 +33,11 @@ class Transaction extends Model
     public function details()
     {
         return $this->hasMany(TransactionDetail::class);
+    }
+
+    public function tenant()
+    {
+        return $this->belongsTo(Tenant::class);
     }
 
     public function user()
