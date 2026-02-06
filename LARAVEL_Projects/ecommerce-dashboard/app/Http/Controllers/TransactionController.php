@@ -127,4 +127,18 @@ class TransactionController extends Controller
 
         return view('transactions.show', compact('transaction'));
     }
+
+    public function confirmPayment(Transaction $transaction)
+    {
+        if ($transaction->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
+        $transaction->update([
+            'payment_amount' => $transaction->total_amount,
+            'change_amount' => 0
+        ]);
+
+        return redirect()->back()->with('success', 'Pembayaran berhasil dikonfirmasi!');
+    }
 }
