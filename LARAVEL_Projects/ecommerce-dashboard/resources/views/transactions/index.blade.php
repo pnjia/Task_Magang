@@ -16,7 +16,8 @@
                                 <tr>
                                     <th class="px-6 py-3">Tanggal</th>
                                     <th class="px-6 py-3">Invoice</th>
-                                    <th class="px-6 py-3">Kasir</th>
+                                    <th class="px-6 py-3">Kasir/User</th>
+                                    <th class="px-6 py-3">Status</th>
                                     <th class="px-6 py-3">Total</th>
                                     <th class="px-6 py-3 text-right">Aksi</th>
                                 </tr>
@@ -31,21 +32,33 @@
                                             {{ $trx->invoice_code }}
                                         </td>
                                         <td class="px-6 py-4">
-                                            {{ $trx->user->name ?? 'Hapus' }}
+                                            {{ $trx->user->name ?? 'Guest' }}
                                         </td>
+
+                                        <td class="px-6 py-4">
+                                            @if ($trx->payment_amount >= $trx->total_amount)
+                                                <span
+                                                    class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded">LUNAS</span>
+                                            @else
+                                                <span
+                                                    class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded">MENUNGGU</span>
+                                            @endif
+                                        </td>
+
                                         <td class="px-6 py-4 font-bold text-green-600">
                                             Rp {{ number_format($trx->total_amount, 0, ',', '.') }}
                                         </td>
-                                        <td class="px-6 py-4 text-right">
+
+                                        <td class="px-6 py-4 text-right text-sm font-medium">
                                             <a href="{{ route('transactions.show', $trx->id) }}"
-                                                class="font-medium text-blue-600 hover:underline">
+                                                class="text-indigo-600 hover:text-indigo-900 font-bold hover:underline">
                                                 Lihat Detail
                                             </a>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="px-6 py-4 text-center text-gray-400 italic">
+                                        <td colspan="6" class="px-6 py-4 text-center text-gray-500 italic">
                                             Belum ada transaksi.
                                         </td>
                                     </tr>

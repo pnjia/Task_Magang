@@ -69,14 +69,38 @@
                 </div>
 
                 <div class="p-6 border-t bg-gray-100 flex justify-between items-center no-print">
+
                     <a href="{{ route('transactions.index') }}"
                         class="text-indigo-600 hover:text-indigo-800 text-sm font-semibold">
                         &larr; Kembali
                     </a>
-                    <button onclick="window.print()"
-                        class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded shadow">
-                        🖨️ Cetak Struk
-                    </button>
+
+                    <div class="flex space-x-3">
+                        @if ($transaction->payment_amount < $transaction->total_amount)
+                            <form action="{{ route('transactions.confirm', $transaction->id) }}" method="POST"
+                                onsubmit="return confirm('Yakin pembayaran sudah diterima di rekening?');">
+                                @csrf
+                                <button type="submit"
+                                    class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded shadow flex items-center gap-2">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Terima Pembayaran
+                                </button>
+                            </form>
+                        @else
+                            <span
+                                class="bg-green-100 text-green-800 font-bold px-3 py-2 rounded border border-green-200 cursor-default">
+                                ✅ SUDAH LUNAS
+                            </span>
+                        @endif
+
+                        <button onclick="window.print()"
+                            class="bg-gray-800 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded shadow">
+                            🖨️ Cetak Struk
+                        </button>
+                    </div>
                 </div>
 
                 <style>
