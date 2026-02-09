@@ -109,13 +109,63 @@ class TransactionController extends Controller
         }
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = Transaction::with('user')->latest('transaction_date')->paginate(10);
+        // Active Statuses: Pesanan yang sedang berjalan
+        $query = Transaction::where('tenant_id', Auth::user()->tenant_id)
+            ->whereIn('status', ['unpaid', 'paid', 'processing', 'shipped']);
+
+        // Filter berdasarkan invoice (pencarian)
+        if ($request->filled('search')) {
+            $query->where('invoice_code', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter berdasarkan rentang tanggal
+        if ($request->filled('date_from')) {
+            $query->whereDate('transaction_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('transaction_date', '<=', $request->date_to);
+        }
+
+        // Filter berdasarkan status
+        if ($request->filled('filter_status')) {
+            $query->where('status', $request->filter_status);
+        }
+
+        $transactions = $query->latest()->paginate(10)->withQueryString();
 
         return view('transactions.index', compact('transactions'));
     }
 
+
+    public function history(Request $request)
+    {
+        // Archive Statuses: Pesanan yang sudah selesai atau dibatalkan
+        $query = Transaction::where('tenant_id', Auth::user()->tenant_id)
+            ->whereIn('status', ['completed', 'cancelled']);
+
+        // Filter berdasarkan invoice (pencarian)
+        if ($request->filled('search')) {
+            $query->where('invoice_code', 'like', '%' . $request->search . '%');
+        }
+
+        // Filter berdasarkan rentang tanggal
+        if ($request->filled('date_from')) {
+            $query->whereDate('transaction_date', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('transaction_date', '<=', $request->date_to);
+        }
+
+        // Tidak ada filter status untuk history (hanya completed & cancelled)
+
+        $transactions = $query->latest()->paginate(10)->withQueryString();
+
+        return view('transactions.history', compact('transactions'));
+    }
 
     public function show(Transaction $transaction)
     {
@@ -141,4 +191,25 @@ class TransactionController extends Controller
 
         return redirect()->back()->with('success', 'Pembayaran berhasil dikonfirmasi!');
     }
+
+    public function update(Request $request, Transaction $transaction)
+    {
+        // 1. Cek Hak Akses (Keamanan)
+        if ($transaction->tenant_id != Auth::user()->tenant_id) {
+            abort(403, "Anda tidak berhak mengubah pesanan ini.");
+        }
+
+        // 2. Validasi Input
+        $request->validate([
+            'status' => 'required|in:unpaid,paid,processing,shipped,completed,cancelled'
+        ]);
+
+        // 3. UPDATE SECARA MANUAL (LEBIH KUAT)
+        // Cara ini mem-bypass proteksi $fillable/$guarded yang sering bikin error diam-diam
+        $transaction->status = $request->status;
+        $transaction->save();
+
+        return back()->with('success', 'Status pesanan berhasil diperbarui menjadi: ' . ucfirst($request->status));
+    }
+
 }

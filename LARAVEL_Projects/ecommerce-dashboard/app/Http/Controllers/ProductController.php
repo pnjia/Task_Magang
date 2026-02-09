@@ -12,12 +12,33 @@ use Illuminate\Validation\Rule;
 class ProductController extends Controller
 {
     //
-    public function index()
+    public function index(Request $request)
     {
 
-        $products = Product::with('category')->latest()->paginate(10);
+        $query = Product::with('category')->latest();
 
-        return view('products.index', compact('products'));
+        // Filter berdasarkan nama produk (pencarian)
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('filter_price')) {
+            $query->where('price', '<=', $request->filter_price);
+        }
+
+        if ($request->filled('filter_category')) {
+            $query->where('category_id', $request->filter_category);
+        }
+
+        if ($request->filled('filter_stock')) {
+            $query->where('stock', '<=', $request->filter_stock);
+        }
+
+        $products = $query->paginate(10)->withQueryString();
+
+        $categories = Category::all();
+
+        return view('products.index', compact('products', 'categories'));
     }
 
     public function create()

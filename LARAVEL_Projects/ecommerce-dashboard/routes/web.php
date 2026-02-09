@@ -31,8 +31,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Riwayat Transaksi
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/transactions/history', [TransactionController::class, 'history'])->name('transactions.history');
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
-
+    Route::patch('/transactions/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
