@@ -80,7 +80,18 @@
                             class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md {{ request()->routeIs('transactions.index') || request()->routeIs('transactions.show') ? 'bg-gray-100 font-semibold text-gray-900' : '' }}">
                             <svg class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                            Pesanan Masuk
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ route('transactions.history') }}"
+                            class="flex items-center px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md {{ request()->routeIs('transactions.history') ? 'bg-gray-100 font-semibold text-gray-900' : '' }}">
+                            <svg class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                             </svg>
                             Riwayat Transaksi
                         </a>
