@@ -34,9 +34,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/transactions/history', [TransactionController::class, 'history'])->name('transactions.history');
     Route::get('/transactions/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
     Route::patch('/transactions/{transaction}', [TransactionController::class, 'update'])->name('transactions.update');
+    Route::put('/transactions/{transaction}/status', [TransactionController::class, 'updateStatus'])->name('transactions.updateStatus');
+
     // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile', [ProfileController::class, 'updatePassword'])->name('profile.password');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
 
