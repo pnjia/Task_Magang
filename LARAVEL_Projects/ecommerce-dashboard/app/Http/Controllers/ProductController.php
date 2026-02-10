@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class ProductController extends Controller
 {
@@ -38,14 +39,20 @@ class ProductController extends Controller
 
         $categories = Category::all();
 
-        return view('products.index', compact('products', 'categories'));
+        return Inertia::render('Products/Index', [
+            'products' => $products,
+            'categories' => $categories,
+            'filters' => $request->only(['search', 'filter_price', 'filter_category', 'filter_stock']),
+        ]);
     }
 
     public function create()
     {
         $categories = Category::all();
 
-        return view('products.create', compact('categories'));
+        return Inertia::render('Products/Create', [
+            'categories' => $categories,
+        ]);
     }
 
     public function store(Request $request)
@@ -75,7 +82,10 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $categories = Category::all();
-        return view('products.edit', compact('product', 'categories'));
+        return Inertia::render('Products/Edit', [
+            'product' => $product,
+            'categories' => $categories,
+        ]);
     }
 
     public function update(Request $request, Product $product)

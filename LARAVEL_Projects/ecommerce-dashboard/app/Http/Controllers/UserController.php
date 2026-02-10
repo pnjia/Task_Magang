@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Inertia\Inertia;
 
 class UserController extends Controller
 {
@@ -13,13 +14,14 @@ class UserController extends Controller
     {
         $users = User::where('tenant_id', auth()->user()->tenant_id)->where('role', '!=', 'customer')->orderBy('created_at', 'desc')->paginate(10);
 
-        return view('users.index', compact('users'));
-
+        return Inertia::render('Users/Index', [
+            'users' => $users,
+        ]);
     }
 
     public function create()
     {
-        return view('users.create');
+        return Inertia::render('Users/Create');
     }
 
     public function store(Request $request)

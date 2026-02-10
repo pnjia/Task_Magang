@@ -8,6 +8,7 @@ use App\Models\TransactionDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB; // Wajib untuk fitur "Batalkan jika error"
+use Inertia\Inertia;
 
 class TransactionController extends Controller
 {
@@ -22,7 +23,9 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('transactions.create', compact('products'));
+        return Inertia::render('Transactions/Create', [
+            'products' => $products
+        ]);
     }
 
     /**
@@ -111,7 +114,7 @@ class TransactionController extends Controller
 
     public function index(Request $request)
     {
-        // Active Statuses: Pesanan yang sedang berjalan
+        // Active Statuses: Pesanan yang sedang berjalan (tidak termasuk completed dan cancelled)
         $query = Transaction::where('tenant_id', Auth::user()->tenant_id)
             ->whereIn('status', ['unpaid', 'paid', 'processing', 'shipped']);
 
@@ -136,7 +139,10 @@ class TransactionController extends Controller
 
         $transactions = $query->latest()->paginate(10)->withQueryString();
 
-        return view('transactions.index', compact('transactions'));
+        return Inertia::render('Transactions/Index', [
+            'transactions' => $transactions,
+            'filters' => $request->only(['search', 'date_from', 'date_to', 'filter_status'])
+        ]);
     }
 
 
@@ -164,7 +170,10 @@ class TransactionController extends Controller
 
         $transactions = $query->latest()->paginate(10)->withQueryString();
 
-        return view('transactions.history', compact('transactions'));
+        return Inertia::render('Transactions/History', [
+            'transactions' => $transactions,
+            'filters' => $request->only(['search', 'date_from', 'date_to'])
+        ]);
     }
 
     public function show(Transaction $transaction)
@@ -175,7 +184,25 @@ class TransactionController extends Controller
 
         $transaction->load(['details.product', 'user']);
 
-        return view('transactions.show', compact('transaction'));
+        return Inertia::render('Transactions/Show', [
+            'transaction' => $transaction
+        ]);
+    }
+
+    public function updateStatus(Request $request, Transaction $transaction)
+    {
+        if ($transaction->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'status' => 'required|in:unpaid,paid,processing,shipped,completed,cancelled'
+        ]);
+
+        $transaction->status = $validated['status'];
+        $transaction->save();
+
+        return redirect()->route('transactions.index')->with('success', 'Status berhasil diupdate!');
     }
 
     public function confirmPayment(Transaction $transaction)

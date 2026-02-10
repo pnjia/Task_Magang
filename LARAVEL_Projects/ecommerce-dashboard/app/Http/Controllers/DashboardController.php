@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -17,9 +18,21 @@ class DashboardController extends Controller
 
         $lowStockProducts = Product::with('category')->where('stock', '<', 10)->orderBy('stock', 'asc')->limit(5)->get();
 
-        $recentTransactions = Transaction::with('user')->latest('transaction_date')->limit(5)->get();
+        $recentTransactions = Transaction::with('user')->latest('transaction_date')->limit(5)->get()->map(function ($transaction) {
+            return [
+                'id' => $transaction->id,
+                'invoice_code' => $transaction->invoice_code,
+                'total_amount' => $transaction->total_amount,
+                'transaction_date_human' => $transaction->transaction_date->diffForHumans(),
+            ];
+        });
 
-        return view('dashboard', compact('totalProducts', 'totalTransactions', 'totalRevenue', 'lowStockProducts', 'recentTransactions'));
-
+        return Inertia::render('Dashboard', [
+            'totalProducts' => $totalProducts,
+            'totalTransactions' => $totalTransactions,
+            'totalRevenue' => $totalRevenue,
+            'lowStockProducts' => $lowStockProducts,
+            'recentTransactions' => $recentTransactions,
+        ]);
     }
 }
