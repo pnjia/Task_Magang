@@ -1,0 +1,916 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Ecommerce Dashboard API Documentation",
+        "description": "Dokumentasi lengkap API untuk Sistem E-commerce Multi-Tenant dengan fitur:\n * - POS (Point of Sale) untuk kasir\n * - Manajemen Produk & Kategori\n * - Manajemen Transaksi dengan filter\n * - Toko Online untuk Customer\n * - Keranjang Belanja & Checkout\n * - Multi-tenancy (setiap tenant memiliki data terpisah)",
+        "contact": {
+            "name": "API Support",
+            "email": "admin@ecommerce.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8000",
+            "description": "Local Development Server"
+        }
+    ],
+    "paths": {
+        "/categories": {
+            "get": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Daftar Kategori Produk",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan semua kategori produk dengan pagination:\n     * \n     * 1. Ambil semua kategori dengan `Category::latest()`\n     * 2. Urutkan berdasarkan created_at descending (terbaru dulu)\n     * 3. Pagination 10 item per page\n     * 4. Return view dengan data categories\n     * \n     * **QUERY:**\n     * ```php\n     * $categories = Category::latest()->paginate(10);\n     * ```\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "ead5fb1cf2a7453acb2e37928a1b1eaf",
+                "responses": {
+                    "200": {
+                        "description": "Daftar kategori berhasil diambil",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Elektronik"
+                                                    },
+                                                    "slug": {
+                                                        "type": "string",
+                                                        "example": "elektronik"
+                                                    },
+                                                    "created_at": {
+                                                        "type": "string",
+                                                        "format": "date-time"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Simpan Kategori Baru",
+                "description": "**LOGIKA:**\n     * \n     * Menyimpan kategori baru ke database:\n     * \n     * 1. **Validasi Input**:\n     *    - name: required, string, max 255 chars\n     *    - slug: required, alpha_dash (hanya huruf, angka, dash, underscore), max 255\n     * 2. **Create Category** - Simpan ke database dengan tenant_id otomatis\n     * 3. **Redirect** - Kembali ke categories.index dengan pesan sukses\n     * \n     * **QUERY:**\n     * ```php\n     * Category::create($validated);\n     * ```\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "bb02f0320882db37f99574196577e446",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "slug"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Aksesoris"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "aksesoris"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "302": {
+                        "description": "Redirect ke categories.index"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/categories/create": {
+            "get": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Form Tambah Kategori",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan form untuk menambah kategori baru.\n     * Tidak ada query database, hanya return view kosong.\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "3ef7e0bc5399e20ab25ef92f99cb0dae",
+                "responses": {
+                    "200": {
+                        "description": "Form berhasil ditampilkan"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/categories/{id}/edit": {
+            "get": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Form Edit Kategori",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan form edit untuk kategori tertentu:\n     * \n     * 1. Ambil data kategori berdasarkan ID (route model binding)\n     * 2. Return view dengan data kategori\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "9355eeafa7159143c390e62eacba80f7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Kategori",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form edit berhasil ditampilkan"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/categories/{id}": {
+            "put": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Update Kategori",
+                "description": "**LOGIKA:**\n     * \n     * Mengupdate data kategori:\n     * \n     * 1. **Validasi Input** - Sama seperti store (name & slug required)\n     * 2. **Update Database** - Update record dengan $category->update()\n     * 3. **Redirect** - Kembali ke categories.index\n     * \n     * **QUERY:**\n     * ```php\n     * $category->update($validated);\n     * ```\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "19954b1f8aa4916b5f032dc28ea36a24",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Gaming Gear"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "gaming-gear"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "302": {
+                        "description": "Redirect ke categories.index"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Categories"
+                ],
+                "summary": "Hapus Kategori",
+                "description": "**LOGIKA:**\n     * \n     * Menghapus kategori dari database:\n     * \n     * 1. Delete kategori dengan $category->delete()\n     * 2. Redirect kembali ke categories.index\n     * \n     * **PERHATIAN:** Pastikan tidak ada produk yang masih menggunakan kategori ini,\n     * atau gunakan onDelete('cascade') / onDelete('set null') di migration.\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "f1b8af6e84bd52b9594d98bde748ebd6",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect ke categories.index"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/dashboard": {
+            "get": {
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Tampilkan Dashboard Statistik Bisnis",
+                "description": "**LOGIKA:**\n     * \n     * Endpoint ini menampilkan ringkasan statistik bisnis untuk owner:\n     * \n     * 1. **Total Produk** - Menghitung semua produk dengan `Product::count()`\n     * 2. **Total Transaksi** - Menghitung semua transaksi dengan `Transaction::count()`\n     * 3. **Total Revenue** - Menjumlahkan pendapatan dengan `Transaction::sum('total_amount')`\n     * 4. **Produk Stok Rendah** - Ambil 5 produk dengan stok < 10, relasi dengan category\n     * 5. **Transaksi Terbaru** - Ambil 5 transaksi terbaru dengan relasi user (kasir)\n     * \n     * **QUERY:**\n     * ```php\n     * Product::count()\n     * Transaction::count()\n     * Transaction::sum('total_amount')\n     * Product::with('category')->where('stock', '<', 10)->orderBy('stock', 'asc')->limit(5)->get()\n     * Transaction::with('user')->latest('transaction_date')->limit(5)->get()\n     * ```\n     * \n     * **AUTHORIZATION:** Owner only (middleware: role:owner)",
+                "operationId": "a92dff3ea055c0a594f425e852840a68",
+                "responses": {
+                    "200": {
+                        "description": "Berhasil mengambil data dashboard",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "totalProducts": {
+                                            "type": "integer",
+                                            "example": 150
+                                        },
+                                        "totalTransactions": {
+                                            "type": "integer",
+                                            "example": 320
+                                        },
+                                        "totalRevenue": {
+                                            "type": "number",
+                                            "example": 25000000
+                                        },
+                                        "lowStockProducts": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "stock": {
+                                                        "type": "integer"
+                                                    },
+                                                    "category": {
+                                                        "type": "object"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "recentTransactions": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "invoice_code": {
+                                                        "type": "string"
+                                                    },
+                                                    "total_amount": {
+                                                        "type": "number"
+                                                    },
+                                                    "status": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/products": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Daftar Produk dengan Filter & Pencarian",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan daftar produk dengan fitur filter dan pencarian:\n     * \n     * 1. **Query Builder** - Mulai dari `Product::with('category')->latest()`\n     * 2. **Pencarian** - Filter nama produk dengan LIKE '%keyword%'\n     * 3. **Filter Harga** - Produk dengan harga <= nilai filter\n     * 4. **Filter Kategori** - Filter berdasarkan category_id\n     * 5. **Filter Stok** - Produk dengan stok <= nilai filter\n     * 6. **Pagination** - 10 item per page dengan withQueryString() untuk maintain filter\n     * \n     * **QUERY:**\n     * ```php\n     * $query = Product::with('category')->latest();\n     * if (search) $query->where('name', 'like', '%'.$search.'%');\n     * if (filter_price) $query->where('price', '<=', $filter_price);\n     * if (filter_category) $query->where('category_id', $filter_category);\n     * if (filter_stock) $query->where('stock', '<=', $filter_stock);\n     * $products = $query->paginate(10)->withQueryString();\n     * ```\n     * \n     * **AUTHORIZATION:** Owner only (middleware: role:owner)",
+                "operationId": "c1ff6f862214e1896c59cfe0491ce0e8",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Cari nama produk (LIKE query)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "Mouse"
+                        }
+                    },
+                    {
+                        "name": "filter_price",
+                        "in": "query",
+                        "description": "Filter harga maksimal",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "example": 500000
+                        }
+                    },
+                    {
+                        "name": "filter_category",
+                        "in": "query",
+                        "description": "Filter berdasarkan ID kategori",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 2
+                        }
+                    },
+                    {
+                        "name": "filter_stock",
+                        "in": "query",
+                        "description": "Filter stok maksimal",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar produk berhasil diambil"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Simpan Produk Baru",
+                "description": "**LOGIKA:**\n     * \n     * Menyimpan produk baru ke database dengan validasi:\n     * \n     * 1. **Validasi Input** - Cek semua field required dan format\n     * 2. **Upload Image** - Jika ada file, simpan ke storage/app/public/products\n     * 3. **Create Product** - Simpan ke database dengan tenant_id otomatis (trait)\n     * 4. **Redirect** - Kembali ke halaman products.index dengan pesan sukses\n     * \n     * **VALIDASI:**\n     * - name: required, string, max 255\n     * - slug: required, alpha_dash, max 255\n     * - category_id: required, exists in categories\n     * - price: required, numeric, min 0\n     * - stock: required, integer, min 0\n     * - image: optional, image format, max 2MB\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "399770d33fa4672f1216707d0e236763",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Mouse Gaming RGB"
+                                    },
+                                    "slug": {
+                                        "type": "string",
+                                        "example": "mouse-gaming-rgb"
+                                    },
+                                    "category_id": {
+                                        "type": "integer",
+                                        "example": 2
+                                    },
+                                    "price": {
+                                        "type": "number",
+                                        "example": 150000
+                                    },
+                                    "stock": {
+                                        "type": "integer",
+                                        "example": 50
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "example": "Mouse gaming dengan RGB lighting"
+                                    },
+                                    "image": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "302": {
+                        "description": "Redirect ke products.index"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/products/create": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Form Tambah Produk Baru",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan form untuk menambah produk baru.\n     * \n     * 1. Ambil semua kategori dengan `Category::all()`\n     * 2. Return view dengan data kategori untuk dropdown\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "9db094b296e200ee866f2ce6100fac81",
+                "responses": {
+                    "200": {
+                        "description": "Form berhasil ditampilkan"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/products/{id}/edit": {
+            "get": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Form Edit Produk",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan form edit untuk produk tertentu:\n     * \n     * 1. Ambil data produk berdasarkan ID (route model binding)\n     * 2. Ambil semua kategori untuk dropdown\n     * 3. Return view dengan data produk & kategori\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "b313910f8c4c6c0a70fb06ad0b7fd831",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID Produk",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Form edit berhasil ditampilkan"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/products/{id}": {
+            "put": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Update Produk",
+                "description": "**LOGIKA:**\n     * \n     * Mengupdate data produk dengan penanganan upload gambar:\n     * \n     * 1. **Validasi Input** - Sama seperti store\n     * 2. **Cek Upload Baru** - Jika ada gambar baru:\n     *    - Hapus gambar lama dari storage\n     *    - Upload gambar baru ke storage/products\n     *    - Update path gambar\n     * 3. **Update Database** - Simpan perubahan ke database\n     * 4. **Redirect** - Kembali ke products.index\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "1419d479f9340e30e67fe21a2ca525b7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    },
+                                    "category_id": {
+                                        "type": "integer"
+                                    },
+                                    "price": {
+                                        "type": "number"
+                                    },
+                                    "stock": {
+                                        "type": "integer"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    },
+                                    "image": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "302": {
+                        "description": "Redirect ke products.index"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Products"
+                ],
+                "summary": "Hapus Produk",
+                "description": "**LOGIKA:**\n     * \n     * Menghapus produk dari database:\n     * \n     * 1. **Authorization** - Cek izin delete dengan Gate\n     * 2. **Hapus Gambar** - Jika ada gambar, hapus dari storage\n     * 3. **Delete Product** - Soft delete dari database\n     * 4. **Redirect** - Kembali ke products.index\n     * \n     * **AUTHORIZATION:** Owner only + Gate 'delete-product'",
+                "operationId": "fe34b364a3f192305598b65d04d06b5d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect ke products.index"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/transactions/create": {
+            "get": {
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Halaman POS (Point of Sale) untuk Kasir",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan halaman kasir/POS dengan daftar produk yang tersedia:\n     * \n     * 1. Ambil produk yang is_active = true\n     * 2. Filter produk yang stoknya > 0 (tersedia)\n     * 3. Urutkan berdasarkan nama produk (ascending)\n     * 4. Return view dengan data products\n     * \n     * **QUERY:**\n     * ```php\n     * $products = Product::where('is_active', true)\n     *     ->where('stock', '>', 0)\n     *     ->orderBy('name')\n     *     ->get();\n     * ```\n     * \n     * **AUTHORIZATION:** Owner & Cashier (semua authenticated user)",
+                "operationId": "2ceb748fbc47939d3bfd7c85d9ca2539",
+                "responses": {
+                    "200": {
+                        "description": "Halaman POS berhasil ditampilkan"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/transactions": {
+            "get": {
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Pesanan Masuk (Active Orders)",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan transaksi dengan status aktif (pesanan yang sedang berjalan):\n     * \n     * **Base Query:**\n     * ```php\n     * $query = Transaction::where('tenant_id', Auth::user()->tenant_id)\n     *     ->whereIn('status', ['unpaid', 'paid', 'processing', 'shipped']);\n     * ```\n     * \n     * **Filter Search (Invoice):**\n     * - Jika ada parameter 'search', tambahkan: `where('invoice_code', 'like', '%search%')`\n     * \n     * **Filter Date Range:**\n     * - Jika ada 'date_from': `whereDate('transaction_date', '>=', $date_from)`\n     * - Jika ada 'date_to': `whereDate('transaction_date', '<=', $date_to)`\n     * \n     * **Filter Status:**\n     * - Jika ada 'filter_status': `where('status', $filter_status)`\n     * - Status valid: unpaid, paid, processing, shipped\n     * \n     * **Pagination:**\n     * - 10 items per page dengan withQueryString() untuk maintain filter\n     * \n     * **AUTHORIZATION:** Owner & Cashier",
+                "operationId": "716a962b580bc03cf3aa45dc2ab6c0e2",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Cari berdasarkan invoice code",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "description": "Filter tanggal mulai",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "description": "Filter tanggal akhir",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "filter_status",
+                        "in": "query",
+                        "description": "Filter berdasarkan status",
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "unpaid",
+                                "paid",
+                                "processing",
+                                "shipped"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar pesanan aktif"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Proses Checkout Transaksi POS",
+                "description": "**LOGIKA LENGKAP:**\n     * \n     * Proses checkout dengan validasi stok dan uang menggunakan Database Transaction (atomik):\n     * \n     * **STEP 1: Validasi Input**\n     * - payment_amount: required, numeric, min 0\n     * - cart: required, array, minimal 1 item\n     * - cart.*.id: ID produk harus ada di database\n     * - cart.*.qty: quantity harus integer min 1\n     * \n     * **STEP 2: Database Transaction (DB::transaction)**\n     * Semua operasi dibungkus transaction agar atomik (all or nothing)\n     * \n     * **STEP 3: Loop Keranjang & Validasi Stok**\n     * ```php\n     * foreach ($cart as $item) {\n     *     $product = Product::lockForUpdate()->find($item['id']); // Kunci row untuk race condition\n     *     if ($product->stock < $item['qty']) throw Exception;\n     *     $totalAmount += $product->price * $item['qty'];\n     * }\n     * ```\n     * \n     * **STEP 4: Validasi Uang Pembayaran**\n     * - Jika payment_amount < totalAmount, throw exception\n     * \n     * **STEP 5: Simpan Header Transaksi**\n     * ```php\n     * Transaction::create([\n     *     'user_id' => Auth::id(),\n     *     'invoice_code' => 'INV-' . time(),\n     *     'total_amount' => $totalAmount,\n     *     'payment_amount' => $payment_amount,\n     *     'change_amount' => $payment_amount - $totalAmount\n     * ]);\n     * ```\n     * \n     * **STEP 6: Simpan Detail & Update Stok**\n     * - Simpan setiap item ke TransactionDetail\n     * - Decrement stok produk dengan $product->decrement()\n     * \n     * **STEP 7: Return Success**\n     * - Redirect ke transactions.create dengan pesan kembalian\n     * \n     * **ERROR HANDLING:**\n     * - Catch Exception dan return back dengan error message\n     * - Database transaction auto-rollback jika ada error\n     * \n     * **AUTHORIZATION:** Owner & Cashier",
+                "operationId": "238affdbe033b73010cbace3ad94520e",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "payment_amount",
+                                    "cart"
+                                ],
+                                "properties": {
+                                    "payment_amount": {
+                                        "description": "Uang yang dibayarkan customer",
+                                        "type": "number",
+                                        "example": 200000
+                                    },
+                                    "cart": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "ID Produk",
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "qty": {
+                                                    "description": "Jumlah beli",
+                                                    "type": "integer",
+                                                    "example": 2
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "302": {
+                        "description": "Redirect dengan pesan sukses/error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/transactions/history": {
+            "get": {
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Riwayat Transaksi (Completed & Cancelled)",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan transaksi yang sudah selesai atau dibatalkan:\n     * \n     * **Base Query:**\n     * ```php\n     * $query = Transaction::where('tenant_id', Auth::user()->tenant_id)\n     *     ->whereIn('status', ['completed', 'cancelled']);\n     * ```\n     * \n     * **Filter Search & Date Range:**\n     * - Sama seperti index() method\n     * \n     * **PERBEDAAN dengan index():**\n     * - TIDAK ada filter status (karena hanya completed & cancelled)\n     * - Status otomatis terbatas pada archive status\n     * \n     * **AUTHORIZATION:** Owner & Cashier",
+                "operationId": "8b99176af7f5e4dae053dfe23da0eed2",
+                "parameters": [
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "description": "Cari berdasarkan invoice code",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Riwayat transaksi"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/transactions/{id}": {
+            "get": {
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Detail Transaksi",
+                "description": "**LOGIKA:**\n     * \n     * Menampilkan detail lengkap transaksi:\n     * \n     * 1. **Authorization Check** - Cek tenant_id, jika beda abort 403\n     * 2. **Eager Loading** - Load relasi: details.product, user\n     * 3. **Return View** - Tampilkan detail transaksi\n     * \n     * **QUERY:**\n     * ```php\n     * $transaction->load(['details.product', 'user']);\n     * ```\n     * \n     * **AUTHORIZATION:** Owner & Cashier (same tenant)",
+                "operationId": "2a6d0d9d6950359d14a92f71c3a55b6d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detail transaksi"
+                    },
+                    "403": {
+                        "description": "Forbidden - Beda tenant"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Update Status Transaksi",
+                "description": "**LOGIKA:**\n     * \n     * Mengupdate status transaksi (unpaid → paid → processing → shipped → completed):\n     * \n     * 1. **Authorization** - Cek tenant_id\n     * 2. **Validasi Status** - Harus salah satu dari: unpaid, paid, processing, shipped, completed, cancelled\n     * 3. **Update Manual** - Bypass fillable/guarded dengan assign langsung:\n     *    ```php\n     *    $transaction->status = $request->status;\n     *    $transaction->save();\n     *    ```\n     * 4. **Return** - Back dengan pesan sukses\n     * \n     * **STATUS FLOW:**\n     * - unpaid → paid (customer bayar)\n     * - paid → processing (owner proses)\n     * - processing → shipped (dikirim)\n     * - shipped → completed (sampai)\n     * - any → cancelled (dibatalkan)\n     * \n     * **AUTHORIZATION:** Owner & Cashier",
+                "operationId": "0908c802893bea3a3b41b3d834ae57a1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "status"
+                                ],
+                                "properties": {
+                                    "status": {
+                                        "type": "string",
+                                        "enum": [
+                                            "unpaid",
+                                            "paid",
+                                            "processing",
+                                            "shipped",
+                                            "completed",
+                                            "cancelled"
+                                        ],
+                                        "example": "processing"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "302": {
+                        "description": "Status berhasil diupdate"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/transactions/{id}/confirm": {
+            "post": {
+                "tags": [
+                    "Transactions"
+                ],
+                "summary": "Konfirmasi Pembayaran (Owner)",
+                "description": "**LOGIKA:**\n     * \n     * Owner mengkonfirmasi pembayaran customer dari toko online:\n     * \n     * 1. **Authorization** - Cek tenant_id\n     * 2. **Update Payment** - Set payment_amount = total_amount, change_amount = 0\n     * 3. **Redirect** - Kembali dengan pesan sukses\n     * \n     * **USE CASE:**\n     * Customer dari toko online membayar via transfer, owner konfirmasi pembayaran.\n     * \n     * **AUTHORIZATION:** Owner only",
+                "operationId": "380fa9d895c2047b77012df2346b0caf",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect dengan sukses"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "sanctum": {
+                "type": "http",
+                "description": "Gunakan token autentikasi Laravel Sanctum untuk protected routes",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Dashboard",
+            "description": "Endpoint untuk statistik bisnis (Owner only)"
+        },
+        {
+            "name": "Products",
+            "description": "CRUD Manajemen Produk dengan filter (Owner only)"
+        },
+        {
+            "name": "Categories",
+            "description": "CRUD Manajemen Kategori Produk (Owner only)"
+        },
+        {
+            "name": "Transactions",
+            "description": "POS, Riwayat Transaksi, dan Konfirmasi Pembayaran"
+        }
+    ]
+}
