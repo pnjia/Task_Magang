@@ -1,10 +1,28 @@
 import './bootstrap';
+import 'nprogress/nprogress.css';
 
-import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { createInertiaApp } from '@inertiajs/react';
+import { createInertiaApp, router } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import Alpine from 'alpinejs';
+import NProgress from 'nprogress';
+
+// Configure NProgress
+NProgress.configure({ 
+    showSpinner: true,
+    trickleSpeed: 200,
+    minimum: 0.3
+});
+
+// Setup progress bar listeners
+router.on('start', () => NProgress.start());
+router.on('finish', () => NProgress.done());
+
+// Disable Inertia default confirmation dialogs
+router.on('before', (event) => {
+    // Allow all requests without confirmation
+    return true;
+});
 
 // Keep Alpine for simple interactivity
 window.Alpine = Alpine;
@@ -18,8 +36,5 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
         root.render(<App {...props} />);
-    },
-    progress: {
-        color: '#4B5563',
     },
 });
