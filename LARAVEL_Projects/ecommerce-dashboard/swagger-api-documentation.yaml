@@ -1,0 +1,2142 @@
+openapi: 3.0.3
+info:
+  title: Ecommerce Dashboard API Documentation
+  description: |
+    # Dokumentasi API Sistem E-commerce Multi-Tenant
+    
+    ## Fitur Utama:
+    - **POS (Point of Sale)** - Sistem kasir untuk transaksi langsung
+    - **Manajemen Produk** - CRUD produk dengan filter (harga, kategori, stok)
+    - **Manajemen Kategori** - CRUD kategori produk
+    - **Manajemen Transaksi** - Riwayat transaksi dengan filter tanggal & status
+    - **Toko Online** - Customer dapat belanja online
+    - **Multi-Tenancy** - Setiap tenant memiliki data terpisah
+    
+    ## Authorization:
+    - **Owner** - Akses penuh ke semua fitur
+    - **Cashier** - Akses ke POS dan riwayat transaksi
+    - **Customer** - Akses ke toko online dan checkout
+    
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: admin@ecommerce.com
+
+servers:
+  - url: http://localhost:8000
+    description: Local Development Server
+
+tags:
+  - name: Authentication
+    description: Login, Register, Logout, dan Password Reset
+  - name: Dashboard
+    description: Statistik bisnis (Owner only)
+  - name: Products
+    description: CRUD Manajemen Produk dengan filter
+  - name: Categories
+    description: CRUD Manajemen Kategori
+  - name: Transactions
+    description: POS, Riwayat, dan Manajemen Transaksi
+  - name: Users
+    description: Manajemen Staff/User (Owner only)
+  - name: Store
+    description: Toko Online untuk Customer (Public)
+  - name: Cart
+    description: Keranjang Belanja
+  - name: Checkout
+    description: Proses Checkout Customer
+
+paths:
+  /register:
+    get:
+      tags:
+        - Authentication
+      summary: Halaman Form Register
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan form registrasi untuk user baru.
+        
+        **Authorization:** Guest only (belum login)
+        
+      responses:
+        '200':
+          description: Form registrasi ditampilkan
+
+    post:
+      tags:
+        - Authentication
+      summary: Proses Registrasi User Baru
+      description: |
+        ## LOGIKA:
+        
+        Mendaftarkan user baru sebagai owner/tenant:
+        
+        ### Validasi:
+        ```php
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|confirmed|min:8',
+            'tenant_name' => 'required|string|max:255',
+            'tenant_slug' => 'required|string|max:255|unique:tenants,slug',
+        ]);
+        ```
+        
+        ### Proses:
+        ```php
+        // 1. Buat tenant baru
+        $tenant = Tenant::create([
+            'name' => $request->tenant_name,
+            'slug' => $request->tenant_slug,
+        ]);
+        
+        // 2. Buat user sebagai owner
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'owner',
+            'tenant_id' => $tenant->id,
+        ]);
+        
+        // 3. Login otomatis
+        Auth::login($user);
+        
+        // 4. Trigger email verification
+        event(new Registered($user));
+        ```
+        
+        **Authorization:** Guest only
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - password_confirmation
+                - tenant_name
+                - tenant_slug
+              properties:
+                name:
+                  type: string
+                  example: John Doe
+                  description: Nama lengkap user
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                  description: Email unique
+                password:
+                  type: string
+                  format: password
+                  example: password123
+                  description: Password minimal 8 karakter
+                password_confirmation:
+                  type: string
+                  format: password
+                  example: password123
+                  description: Konfirmasi password (harus sama)
+                tenant_name:
+                  type: string
+                  example: Toko Komputer
+                  description: Nama toko/bisnis
+                tenant_slug:
+                  type: string
+                  example: toko-komputer
+                  description: URL slug untuk toko online (unique)
+      responses:
+        '302':
+          description: Redirect ke dashboard setelah register sukses
+        '422':
+          description: Validation error
+
+  /login:
+    get:
+      tags:
+        - Authentication
+      summary: Halaman Form Login
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan form login untuk user yang sudah terdaftar.
+        
+        **Authorization:** Guest only (belum login)
+        
+      responses:
+        '200':
+          description: Form login ditampilkan
+
+    post:
+      tags:
+        - Authentication
+      summary: Proses Login
+      description: |
+        ## LOGIKA:
+        
+        Melakukan autentikasi user dengan email dan password:
+        
+        ### Validasi:
+        ```php
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+        ```
+        
+        ### Proses:
+        ```php
+        // 1. Attempt login dengan throttling
+        if (Auth::attempt([
+            'email' => $request->email, 
+            'password' => $request->password
+        ], $request->remember)) {
+            
+            // 2. Regenerate session (keamanan)
+            $request->session()->regenerate();
+            
+            // 3. Redirect ke intended atau dashboard
+            return redirect()->intended('/dashboard');
+        }
+        
+        // 4. Jika gagal, throw validation error
+        throw ValidationException::withMessages([
+            'email' => 'Kredensial tidak cocok.',
+        ]);
+        ```
+        
+        **Features:**
+        - Rate limiting (throttle) untuk mencegah brute force
+        - Remember me functionality
+        - Session regeneration untuk keamanan
+        
+        **Authorization:** Guest only
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: owner@toko.com
+                  description: Email terdaftar
+                password:
+                  type: string
+                  format: password
+                  example: password123
+                  description: Password user
+                remember:
+                  type: boolean
+                  example: true
+                  description: Remember me (optional)
+      responses:
+        '302':
+          description: Login sukses, redirect ke dashboard
+        '422':
+          description: Kredensial tidak valid
+        '429':
+          description: Too many login attempts (rate limited)
+
+  /logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout User
+      description: |
+        ## LOGIKA:
+        
+        Mengeluarkan user dari sistem:
+        
+        ```php
+        // 1. Logout dari Auth guard
+        Auth::guard('web')->logout();
+        
+        // 2. Invalidate session
+        $request->session()->invalidate();
+        
+        // 3. Regenerate CSRF token
+        $request->session()->regenerateToken();
+        
+        // 4. Redirect ke homepage
+        return redirect('/');
+        ```
+        
+        **Security:**
+        - Session invalidation untuk mencegah session fixation
+        - CSRF token regeneration
+        
+        **Authorization:** Authenticated user only
+        
+      security:
+        - cookieAuth: []
+      responses:
+        '302':
+          description: Logout sukses, redirect ke homepage
+
+  /forgot-password:
+    get:
+      tags:
+        - Authentication
+      summary: Halaman Form Lupa Password
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan form untuk request password reset link.
+        
+        **Authorization:** Guest only
+        
+      responses:
+        '200':
+          description: Form lupa password ditampilkan
+
+    post:
+      tags:
+        - Authentication
+      summary: Kirim Link Reset Password
+      description: |
+        ## LOGIKA:
+        
+        Mengirim email berisi link reset password:
+        
+        ### Validasi:
+        ```php
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+        ```
+        
+        ### Proses:
+        ```php
+        // 1. Generate token reset password
+        $status = Password::sendResetLink(
+            $request->only('email')
+        );
+        
+        // 2. Kirim email dengan link reset
+        // Link format: /reset-password/{token}?email={email}
+        
+        // 3. Return status
+        if ($status === Password::RESET_LINK_SENT) {
+            return back()->with('status', 'Link reset password telah dikirim!');
+        }
+        ```
+        
+        **Features:**
+        - Token expiration (default 60 menit)
+        - Rate limiting untuk mencegah spam
+        
+        **Authorization:** Guest only
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: owner@toko.com
+                  description: Email terdaftar
+      responses:
+        '302':
+          description: Link reset password dikirim ke email
+        '429':
+          description: Too many requests
+
+  /reset-password:
+    post:
+      tags:
+        - Authentication
+      summary: Reset Password dengan Token
+      description: |
+        ## LOGIKA:
+        
+        Mereset password user dengan token dari email:
+        
+        ### Validasi:
+        ```php
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|string|confirmed|min:8',
+        ]);
+        ```
+        
+        ### Proses:
+        ```php
+        // 1. Validasi token dan email
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                // 2. Update password
+                $user->password = Hash::make($password);
+                $user->setRememberToken(Str::random(60));
+                $user->save();
+                
+                // 3. Trigger event
+                event(new PasswordReset($user));
+            }
+        );
+        
+        // 4. Login otomatis (optional)
+        if ($status === Password::PASSWORD_RESET) {
+            return redirect('/login')->with('status', 'Password berhasil direset!');
+        }
+        ```
+        
+        **Authorization:** Guest only
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - email
+                - password
+                - password_confirmation
+              properties:
+                token:
+                  type: string
+                  example: 1234567890abcdef
+                  description: Token dari email
+                email:
+                  type: string
+                  format: email
+                  example: owner@toko.com
+                password:
+                  type: string
+                  format: password
+                  example: newpassword123
+                  description: Password baru (min 8 karakter)
+                password_confirmation:
+                  type: string
+                  format: password
+                  example: newpassword123
+                  description: Konfirmasi password baru
+      responses:
+        '302':
+          description: Password berhasil direset, redirect ke login
+        '422':
+          description: Token invalid atau expired
+
+  /verify-email:
+    get:
+      tags:
+        - Authentication
+      summary: Halaman Email Verification Notice
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan notice untuk user yang belum verify email.
+        
+        ```php
+        // Jika user sudah verified, redirect ke dashboard
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect('/dashboard');
+        }
+        ```
+        
+        **Authorization:** Authenticated user only
+        
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Notice verification ditampilkan
+
+  /email/verification-notification:
+    post:
+      tags:
+        - Authentication
+      summary: Kirim Ulang Email Verification
+      description: |
+        ## LOGIKA:
+        
+        Mengirim ulang email verification jika user belum terima:
+        
+        ```php
+        // Jika sudah verified, redirect
+        if ($request->user()->hasVerifiedEmail()) {
+            return redirect('/dashboard');
+        }
+        
+        // Kirim email verification
+        $request->user()->sendEmailVerificationNotification();
+        
+        return back()->with('status', 'Link verifikasi telah dikirim!');
+        ```
+        
+        **Features:**
+        - Throttle 6 attempts per minute
+        
+        **Authorization:** Authenticated user only
+        
+      security:
+        - cookieAuth: []
+      responses:
+        '302':
+          description: Email verification dikirim ulang
+        '429':
+          description: Too many requests
+
+  /profile:
+    get:
+      tags:
+        - Authentication
+      summary: Halaman Edit Profile
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan form edit profile user (nama, email, password).
+        
+        **Authorization:** Authenticated user
+        
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Form edit profile
+
+    patch:
+      tags:
+        - Authentication
+      summary: Update Profile Information
+      description: |
+        ## LOGIKA:
+        
+        Update informasi profile user:
+        
+        ### Validasi:
+        ```php
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
+        ]);
+        ```
+        
+        ### Proses:
+        ```php
+        // 1. Update data
+        $user->fill($request->only('name', 'email'));
+        
+        // 2. Jika email berubah, reset email_verified_at
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+        
+        $user->save();
+        ```
+        
+        **Authorization:** Authenticated user
+        
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: John Doe Updated
+                email:
+                  type: string
+                  example: newemail@toko.com
+      responses:
+        '302':
+          description: Profile berhasil diupdate
+
+    delete:
+      tags:
+        - Authentication
+      summary: Hapus Akun User
+      description: |
+        ## LOGIKA:
+        
+        Menghapus akun user secara permanen:
+        
+        ```php
+        // 1. Validasi password untuk konfirmasi
+        $request->validateWithBag('userDeletion', [
+            'password' => ['required', 'current_password'],
+        ]);
+        
+        // 2. Logout user
+        Auth::logout();
+        
+        // 3. Delete user
+        $user = $request->user();
+        $user->delete();
+        
+        // 4. Invalidate session
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+        ```
+        
+        **Authorization:** Authenticated user
+        
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  format: password
+                  description: Password untuk konfirmasi hapus akun
+      responses:
+        '302':
+          description: Akun berhasil dihapus, redirect ke homepage
+
+  /password:
+    put:
+      tags:
+        - Authentication
+      summary: Update Password
+      description: |
+        ## LOGIKA:
+        
+        Mengubah password user yang sedang login:
+        
+        ### Validasi:
+        ```php
+        $request->validate([
+            'current_password' => 'required|current_password',
+            'password' => 'required|string|confirmed|min:8',
+        ]);
+        ```
+        
+        ### Proses:
+        ```php
+        // Update password
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+        ```
+        
+        **Authorization:** Authenticated user
+        
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - current_password
+                - password
+                - password_confirmation
+              properties:
+                current_password:
+                  type: string
+                  format: password
+                  description: Password saat ini
+                password:
+                  type: string
+                  format: password
+                  description: Password baru (min 8 karakter)
+                password_confirmation:
+                  type: string
+                  format: password
+                  description: Konfirmasi password baru
+      responses:
+        '302':
+          description: Password berhasil diubah
+
+
+  /dashboard:
+    get:
+      tags:
+        - Dashboard
+      summary: Dashboard Statistik Bisnis
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan ringkasan statistik untuk owner:
+        
+        ### Query yang Dijalankan:
+        ```php
+        $totalProducts = Product::count();
+        $totalTransactions = Transaction::count();
+        $totalRevenue = Transaction::sum('total_amount');
+        $lowStockProducts = Product::with('category')
+            ->where('stock', '<', 10)
+            ->orderBy('stock', 'asc')
+            ->limit(5)
+            ->get();
+        $recentTransactions = Transaction::with('user')
+            ->latest('transaction_date')
+            ->limit(5)
+            ->get();
+        ```
+        
+        ### Output:
+        1. Total produk di sistem
+        2. Total transaksi
+        3. Total pendapatan (revenue)
+        4. 5 produk dengan stok paling rendah (< 10)
+        5. 5 transaksi terbaru
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Berhasil mengambil data dashboard
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalProducts:
+                    type: integer
+                    example: 150
+                  totalTransactions:
+                    type: integer
+                    example: 320
+                  totalRevenue:
+                    type: number
+                    example: 25000000
+                  lowStockProducts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        name:
+                          type: string
+                        stock:
+                          type: integer
+                        category:
+                          type: object
+                  recentTransactions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        invoice_code:
+                          type: string
+                        total_amount:
+                          type: number
+                        status:
+                          type: string
+        '403':
+          description: Forbidden - Bukan owner
+
+  /products:
+    get:
+      tags:
+        - Products
+      summary: Daftar Produk dengan Filter
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan daftar produk dengan berbagai filter:
+        
+        ### Query Builder:
+        ```php
+        $query = Product::with('category')->latest();
+        
+        // Filter nama produk
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+        
+        // Filter harga maksimal
+        if ($request->filled('filter_price')) {
+            $query->where('price', '<=', $request->filter_price);
+        }
+        
+        // Filter kategori
+        if ($request->filled('filter_category')) {
+            $query->where('category_id', $request->filter_category);
+        }
+        
+        // Filter stok maksimal
+        if ($request->filled('filter_stock')) {
+            $query->where('stock', '<=', $request->filter_stock);
+        }
+        
+        $products = $query->paginate(10)->withQueryString();
+        ```
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: search
+          in: query
+          description: Cari nama produk (LIKE query)
+          schema:
+            type: string
+            example: Mouse
+        - name: filter_price
+          in: query
+          description: Filter harga maksimal
+          schema:
+            type: number
+            example: 500000
+        - name: filter_category
+          in: query
+          description: Filter berdasarkan ID kategori
+          schema:
+            type: integer
+            example: 2
+        - name: filter_stock
+          in: query
+          description: Filter stok maksimal
+          schema:
+            type: integer
+            example: 10
+        - name: page
+          in: query
+          description: Halaman pagination
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Daftar produk berhasil diambil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  current_page:
+                    type: integer
+                  total:
+                    type: integer
+
+    post:
+      tags:
+        - Products
+      summary: Tambah Produk Baru
+      description: |
+        ## LOGIKA:
+        
+        Menyimpan produk baru dengan validasi:
+        
+        ### Validasi:
+        ```php
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|alpha_dash',
+            'category_id' => 'required|exists:categories,id',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'description' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+        ```
+        
+        ### Proses Upload Image:
+        ```php
+        if ($request->hasFile('image')) {
+            $filePath = $request->file('image')->store('products', 'public');
+            $validated['image'] = $filePath;
+        }
+        
+        Product::create($validated); // tenant_id otomatis dari trait
+        ```
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - slug
+                - category_id
+                - price
+                - stock
+              properties:
+                name:
+                  type: string
+                  example: Mouse Gaming RGB
+                slug:
+                  type: string
+                  example: mouse-gaming-rgb
+                category_id:
+                  type: integer
+                  example: 2
+                price:
+                  type: number
+                  example: 150000
+                stock:
+                  type: integer
+                  example: 50
+                description:
+                  type: string
+                  example: Mouse gaming dengan RGB lighting
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirect ke products.index
+        '422':
+          description: Validation error
+
+  /products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Detail Produk
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail produk
+
+    put:
+      tags:
+        - Products
+      summary: Update Produk
+      description: |
+        ## LOGIKA:
+        
+        Update produk dengan handling image replacement:
+        
+        ### Proses:
+        ```php
+        // 1. Validasi sama seperti store
+        $validated = $request->validate([...]);
+        
+        // 2. Jika ada upload image baru
+        if ($request->hasFile('image')) {
+            // Hapus image lama
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            // Upload image baru
+            $filePath = $request->file('image')->store('products', 'public');
+            $validated['image'] = $filePath;
+        }
+        
+        // 3. Update database
+        $product->update($validated);
+        ```
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+                category_id:
+                  type: integer
+                price:
+                  type: number
+                stock:
+                  type: integer
+                description:
+                  type: string
+                image:
+                  type: string
+                  format: binary
+      responses:
+        '302':
+          description: Redirect ke products.index
+
+    delete:
+      tags:
+        - Products
+      summary: Hapus Produk
+      description: |
+        ## LOGIKA:
+        
+        Menghapus produk dan imagenya:
+        
+        ```php
+        Gate::authorize('delete-product');
+        
+        if ($product->image) {
+            Storage::disk('public')->delete($product->image);
+        }
+        
+        $product->delete();
+        ```
+        
+        **Authorization:** Owner only + Gate
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '302':
+          description: Redirect ke products.index
+
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: Daftar Kategori
+      description: |
+        ## LOGIKA:
+        
+        ```php
+        $categories = Category::latest()->paginate(10);
+        ```
+        
+        Menampilkan semua kategori dengan pagination 10 item per page.
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Daftar kategori
+
+    post:
+      tags:
+        - Categories
+      summary: Tambah Kategori
+      description: |
+        ## LOGIKA:
+        
+        ### Validasi:
+        ```php
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|alpha_dash'
+        ]);
+        
+        Category::create($validated); // tenant_id otomatis
+        ```
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - slug
+              properties:
+                name:
+                  type: string
+                  example: Aksesoris
+                slug:
+                  type: string
+                  example: aksesoris
+      responses:
+        '302':
+          description: Redirect ke categories.index
+
+  /categories/{id}:
+    put:
+      tags:
+        - Categories
+      summary: Update Kategori
+      description: |
+        ## LOGIKA:
+        
+        ```php
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|alpha_dash',
+        ]);
+        
+        $category->update($validated);
+        ```
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                slug:
+                  type: string
+      responses:
+        '302':
+          description: Redirect ke categories.index
+
+    delete:
+      tags:
+        - Categories
+      summary: Hapus Kategori
+      description: |
+        ## LOGIKA:
+        
+        ```php
+        $category->delete();
+        ```
+        
+        **PERHATIAN:** Pastikan tidak ada produk yang menggunakan kategori ini.
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '302':
+          description: Redirect ke categories.index
+
+  /transactions/create:
+    get:
+      tags:
+        - Transactions
+      summary: Halaman POS (Point of Sale)
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan halaman kasir dengan produk yang tersedia:
+        
+        ```php
+        $products = Product::where('is_active', true)
+            ->where('stock', '>', 0)
+            ->orderBy('name')
+            ->get();
+        ```
+        
+        Filter:
+        - Hanya produk aktif
+        - Hanya produk yang stoknya > 0
+        - Diurutkan berdasarkan nama
+        
+        **Authorization:** Owner & Cashier
+        
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Halaman POS
+
+  /transactions:
+    get:
+      tags:
+        - Transactions
+      summary: Pesanan Masuk (Active Orders)
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan transaksi dengan status aktif:
+        
+        ### Base Query:
+        ```php
+        $query = Transaction::where('tenant_id', Auth::user()->tenant_id)
+            ->whereIn('status', ['unpaid', 'paid', 'processing', 'shipped']);
+        ```
+        
+        ### Filter Search (Invoice):
+        ```php
+        if ($request->filled('search')) {
+            $query->where('invoice_code', 'like', '%' . $request->search . '%');
+        }
+        ```
+        
+        ### Filter Date Range:
+        ```php
+        if ($request->filled('date_from')) {
+            $query->whereDate('transaction_date', '>=', $request->date_from);
+        }
+        if ($request->filled('date_to')) {
+            $query->whereDate('transaction_date', '<=', $request->date_to);
+        }
+        ```
+        
+        ### Filter Status:
+        ```php
+        if ($request->filled('filter_status')) {
+            $query->where('status', $request->filter_status);
+        }
+        ```
+        
+        ### Pagination:
+        ```php
+        $transactions = $query->latest()->paginate(10)->withQueryString();
+        ```
+        
+        **Authorization:** Owner & Cashier
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: search
+          in: query
+          description: Cari invoice code
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          description: Filter tanggal mulai
+          schema:
+            type: string
+            format: date
+            example: '2026-02-01'
+        - name: date_to
+          in: query
+          description: Filter tanggal akhir
+          schema:
+            type: string
+            format: date
+            example: '2026-02-10'
+        - name: filter_status
+          in: query
+          description: Filter status
+          schema:
+            type: string
+            enum:
+              - unpaid
+              - paid
+              - processing
+              - shipped
+      responses:
+        '200':
+          description: Daftar pesanan aktif
+
+    post:
+      tags:
+        - Transactions
+      summary: Proses Checkout POS
+      description: |
+        ## LOGIKA LENGKAP:
+        
+        Proses checkout dengan validasi stok dan Database Transaction (atomik):
+        
+        ### STEP 1: Validasi Input
+        ```php
+        $request->validate([
+            'payment_amount' => 'required|numeric|min:0',
+            'cart' => 'required|array|min:1',
+            'cart.*.id' => 'required|exists:products,id',
+            'cart.*.qty' => 'required|integer|min:1',
+        ]);
+        ```
+        
+        ### STEP 2: Database Transaction
+        ```php
+        DB::transaction(function () use ($request) {
+            // Semua operasi di sini atomik (all or nothing)
+        });
+        ```
+        
+        ### STEP 3: Loop Keranjang & Validasi Stok
+        ```php
+        foreach ($request->cart as $item) {
+            // Lock row untuk race condition
+            $product = Product::lockForUpdate()->find($item['id']);
+            
+            // Validasi stok
+            if ($product->stock < $item['qty']) {
+                throw new Exception("Stok {$product->name} tidak cukup!");
+            }
+            
+            // Hitung total
+            $subtotal = $product->price * $item['qty'];
+            $totalAmount += $subtotal;
+        }
+        ```
+        
+        ### STEP 4: Validasi Pembayaran
+        ```php
+        if ($request->payment_amount < $totalAmount) {
+            throw new Exception("Uang pembayaran kurang!");
+        }
+        ```
+        
+        ### STEP 5: Simpan Header Transaksi
+        ```php
+        $transaction = Transaction::create([
+            'user_id' => Auth::id(),
+            'invoice_code' => 'INV-' . time(),
+            'transaction_date' => now(),
+            'total_amount' => $totalAmount,
+            'payment_amount' => $request->payment_amount,
+            'change_amount' => $request->payment_amount - $totalAmount,
+        ]);
+        ```
+        
+        ### STEP 6: Simpan Detail & Update Stok
+        ```php
+        foreach ($details as $detail) {
+            TransactionDetail::create([...]);
+            $product->decrement('stock', $detail['quantity']);
+        }
+        ```
+        
+        ### ERROR HANDLING:
+        - Jika ada error, database auto-rollback
+        - Return back dengan error message
+        
+        **Authorization:** Owner & Cashier
+        
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - payment_amount
+                - cart
+              properties:
+                payment_amount:
+                  type: number
+                  example: 200000
+                  description: Uang yang dibayarkan customer
+                cart:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                        description: ID Produk
+                      qty:
+                        type: integer
+                        example: 2
+                        description: Jumlah beli
+      responses:
+        '302':
+          description: Redirect dengan pesan sukses/error
+        '422':
+          description: Validation error
+
+  /transactions/history:
+    get:
+      tags:
+        - Transactions
+      summary: Riwayat Transaksi (Completed & Cancelled)
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan transaksi yang sudah selesai atau dibatalkan:
+        
+        ### Base Query:
+        ```php
+        $query = Transaction::where('tenant_id', Auth::user()->tenant_id)
+            ->whereIn('status', ['completed', 'cancelled']);
+        ```
+        
+        ### Filter Search & Date Range:
+        Sama seperti `/transactions` endpoint
+        
+        ### PERBEDAAN:
+        - **TIDAK ada filter status** (karena hanya completed & cancelled)
+        - Status otomatis terbatas pada archive status
+        
+        **Authorization:** Owner & Cashier
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Riwayat transaksi
+
+  /transactions/{id}:
+    get:
+      tags:
+        - Transactions
+      summary: Detail Transaksi
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan detail lengkap transaksi:
+        
+        ```php
+        // 1. Cek authorization
+        if ($transaction->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+        
+        // 2. Eager load relasi
+        $transaction->load(['details.product', 'user']);
+        ```
+        
+        **Authorization:** Owner & Cashier (same tenant)
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detail transaksi
+        '403':
+          description: Forbidden - Beda tenant
+
+    patch:
+      tags:
+        - Transactions
+      summary: Update Status Transaksi
+      description: |
+        ## LOGIKA:
+        
+        Mengupdate status transaksi sesuai flow:
+        
+        ### Status Flow:
+        - `unpaid` → `paid` (customer bayar)
+        - `paid` → `processing` (owner proses)
+        - `processing` → `shipped` (dikirim)
+        - `shipped` → `completed` (sampai)
+        - any → `cancelled` (dibatalkan)
+        
+        ### Implementasi:
+        ```php
+        // 1. Authorization check
+        if ($transaction->tenant_id != Auth::user()->tenant_id) {
+            abort(403);
+        }
+        
+        // 2. Validasi status
+        $request->validate([
+            'status' => 'required|in:unpaid,paid,processing,shipped,completed,cancelled'
+        ]);
+        
+        // 3. Update manual (bypass fillable)
+        $transaction->status = $request->status;
+        $transaction->save();
+        ```
+        
+        **Authorization:** Owner & Cashier
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - unpaid
+                    - paid
+                    - processing
+                    - shipped
+                    - completed
+                    - cancelled
+                  example: processing
+      responses:
+        '302':
+          description: Status berhasil diupdate
+
+  /transactions/{id}/confirm:
+    post:
+      tags:
+        - Transactions
+      summary: Konfirmasi Pembayaran (Owner)
+      description: |
+        ## LOGIKA:
+        
+        Owner mengkonfirmasi pembayaran dari customer toko online:
+        
+        ```php
+        if ($transaction->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+        
+        $transaction->update([
+            'payment_amount' => $transaction->total_amount,
+            'change_amount' => 0
+        ]);
+        ```
+        
+        ### USE CASE:
+        Customer dari toko online membayar via transfer, owner konfirmasi.
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '302':
+          description: Pembayaran dikonfirmasi
+
+  /users:
+    get:
+      tags:
+        - Users
+      summary: Daftar Staff/User
+      description: |
+        ## LOGIKA:
+        
+        ```php
+        $users = User::where('tenant_id', auth()->user()->tenant_id)
+            ->where('role', '!=', 'customer')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+        ```
+        
+        Filter:
+        - Hanya user dengan tenant_id yang sama
+        - Exclude customer (hanya staff & owner)
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Daftar user
+
+    post:
+      tags:
+        - Users
+      summary: Tambah Staff Baru
+      description: |
+        ## LOGIKA:
+        
+        ### Validasi:
+        ```php
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'role' => 'required|in:owner,cashier',
+        ]);
+        ```
+        
+        ### Create User:
+        ```php
+        User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            'tenant_id' => auth()->user()->tenant_id,
+            'email_verified_at' => now(),
+        ]);
+        ```
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+                - role
+              properties:
+                name:
+                  type: string
+                  example: Kasir 1
+                email:
+                  type: string
+                  example: kasir1@toko.com
+                password:
+                  type: string
+                  example: password123
+                role:
+                  type: string
+                  enum:
+                    - owner
+                    - cashier
+      responses:
+        '302':
+          description: Staff berhasil ditambahkan
+
+  /users/{id}/role:
+    put:
+      tags:
+        - Users
+      summary: Update Role User
+      description: |
+        ## LOGIKA:
+        
+        ```php
+        $request->validate([
+            'role' => 'required|in:owner,cashier'
+        ]);
+        
+        // Cek tidak menurunkan jabatan sendiri
+        if ($user->id === auth()->id() && $request->role !== 'owner') {
+            return back()->with('error', 'Tidak bisa menurunkan jabatan sendiri!');
+        }
+        
+        $user->update(['role' => $request->role]);
+        ```
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                role:
+                  type: string
+                  enum:
+                    - owner
+                    - cashier
+      responses:
+        '302':
+          description: Role berhasil diupdate
+
+  /users/{id}:
+    delete:
+      tags:
+        - Users
+      summary: Hapus User
+      description: |
+        ## LOGIKA:
+        
+        ```php
+        // Tidak bisa hapus akun sendiri
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'Dilarang menghapus akun sendiri!');
+        }
+        
+        $user->delete();
+        ```
+        
+        **Authorization:** Owner only
+        
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '302':
+          description: User berhasil dihapus
+
+  /store/{slug}:
+    get:
+      tags:
+        - Store
+      summary: Halaman Toko Online (Public)
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan toko online customer berdasarkan slug tenant:
+        
+        ```php
+        $tenant = Tenant::where('slug', $slug)->firstOrFail();
+        $products = Product::where('tenant_id', $tenant->id)
+            ->where('is_active', true)
+            ->where('stock', '>', 0)
+            ->paginate(12);
+        ```
+        
+        **Authorization:** Public (tanpa login)
+        
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Slug tenant/toko
+          schema:
+            type: string
+            example: toko-komputer
+      responses:
+        '200':
+          description: Halaman toko online
+
+  /store/{slug}/product/{productSlug}:
+    get:
+      tags:
+        - Store
+      summary: Detail Produk Toko Online
+      description: |
+        ## LOGIKA:
+        
+        ```php
+        $tenant = Tenant::where('slug', $slug)->firstOrFail();
+        $product = Product::where('tenant_id', $tenant->id)
+            ->where('slug', $productSlug)
+            ->firstOrFail();
+        ```
+        
+        **Authorization:** Public
+        
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Detail produk
+
+  /store/{slug}/cart/{productId}:
+    get:
+      tags:
+        - Cart
+      summary: Tambah Produk ke Keranjang
+      description: |
+        ## LOGIKA:
+        
+        Menambahkan produk ke session cart:
+        
+        ```php
+        $cart = session()->get('cart', []);
+        
+        if (isset($cart[$productId])) {
+            $cart[$productId]['quantity']++;
+        } else {
+            $cart[$productId] = [
+                'product' => $product,
+                'quantity' => 1
+            ];
+        }
+        
+        session()->put('cart', $cart);
+        ```
+        
+        **Authorization:** Public
+        
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '302':
+          description: Redirect dengan pesan
+
+  /cart/remove/{key}:
+    get:
+      tags:
+        - Cart
+      summary: Hapus Item dari Keranjang
+      description: |
+        ## LOGIKA:
+        
+        ```php
+        $cart = session()->get('cart', []);
+        unset($cart[$key]);
+        session()->put('cart', $cart);
+        ```
+        
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Redirect
+
+  /cart/change/{key}/{operation}:
+    get:
+      tags:
+        - Cart
+      summary: Ubah Quantity Item
+      description: |
+        ## LOGIKA:
+        
+        ```php
+        $cart = session()->get('cart', []);
+        
+        if ($operation === 'increase') {
+            $cart[$key]['quantity']++;
+        } elseif ($operation === 'decrease') {
+            if ($cart[$key]['quantity'] > 1) {
+                $cart[$key]['quantity']--;
+            } else {
+                unset($cart[$key]);
+            }
+        }
+        
+        session()->put('cart', $cart);
+        ```
+        
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: operation
+          in: path
+          required: true
+          schema:
+            type: string
+            enum:
+              - increase
+              - decrease
+      responses:
+        '302':
+          description: Redirect
+
+  /keranjang:
+    get:
+      tags:
+        - Cart
+      summary: Keranjang Global (View All Cart Items)
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan semua item di keranjang dari session:
+        
+        ```php
+        $cart = session()->get('cart', []);
+        ```
+        
+        **Authorization:** Public
+        
+      responses:
+        '200':
+          description: Halaman keranjang
+
+  /store/{slug}/checkout:
+    get:
+      tags:
+        - Checkout
+      summary: Halaman Checkout
+      description: |
+        ## LOGIKA:
+        
+        Menampilkan form checkout dengan summary cart:
+        
+        ```php
+        $cart = session()->get('cart', []);
+        $total = array_sum(array_map(function($item) {
+            return $item['product']->price * $item['quantity'];
+        }, $cart));
+        ```
+        
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Form checkout
+
+  /checkout/process:
+    post:
+      tags:
+        - Checkout
+      summary: Proses Checkout Customer
+      description: |
+        ## LOGIKA:
+        
+        Proses checkout untuk customer toko online:
+        
+        ### STEP 1: Validasi Input
+        ```php
+        $request->validate([
+            'customer_name' => 'required|string',
+            'customer_email' => 'required|email',
+            'customer_phone' => 'required|string',
+            'address' => 'required|string',
+        ]);
+        ```
+        
+        ### STEP 2: Create Customer User
+        ```php
+        $customer = User::create([
+            'name' => $request->customer_name,
+            'email' => $request->customer_email,
+            'password' => Hash::make('temporary'),
+            'role' => 'customer',
+            'tenant_id' => $tenant->id,
+        ]);
+        ```
+        
+        ### STEP 3: Create Transaction (status: unpaid)
+        ```php
+        $transaction = Transaction::create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $customer->id,
+            'invoice_code' => 'INV-' . time(),
+            'total_amount' => $totalAmount,
+            'status' => 'unpaid',
+        ]);
+        ```
+        
+        ### STEP 4: Save Details & Clear Cart
+        ```php
+        foreach ($cart as $item) {
+            TransactionDetail::create([...]);
+        }
+        session()->forget('cart');
+        ```
+        
+        **Authorization:** Public
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - customer_name
+                - customer_email
+                - customer_phone
+                - address
+              properties:
+                customer_name:
+                  type: string
+                  example: John Doe
+                customer_email:
+                  type: string
+                  example: john@example.com
+                customer_phone:
+                  type: string
+                  example: '08123456789'
+                address:
+                  type: string
+                  example: Jl. Contoh No. 123
+      responses:
+        '302':
+          description: Redirect ke halaman sukses
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: laravel_session
+      description: Session cookie Laravel
+
+  schemas:
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Mouse Gaming RGB
+        slug:
+          type: string
+          example: mouse-gaming-rgb
+        category_id:
+          type: integer
+          example: 2
+        price:
+          type: number
+          example: 150000
+        stock:
+          type: integer
+          example: 50
+        description:
+          type: string
+        image:
+          type: string
+        is_active:
+          type: boolean
+        category:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        invoice_code:
+          type: string
+        transaction_date:
+          type: string
+          format: date-time
+        total_amount:
+          type: number
+        payment_amount:
+          type: number
+        change_amount:
+          type: number
+        status:
+          type: string
+          enum:
+            - unpaid
+            - paid
+            - processing
+            - shipped
+            - completed
+            - cancelled
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+            - owner
+            - cashier
+            - customer
