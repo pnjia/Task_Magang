@@ -1,5 +1,4 @@
-// AppLayout Component
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, usePage } from '@inertiajs/react';
 
 export default function AppLayout({ title, children }) {

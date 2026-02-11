@@ -1,5 +1,4 @@
-// Transactions History Page
-import { useState } from 'react';
+import React, { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Link, router } from '@inertiajs/react';
 

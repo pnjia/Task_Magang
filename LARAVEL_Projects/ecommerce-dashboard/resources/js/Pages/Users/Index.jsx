@@ -1,6 +1,5 @@
+import React, { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
-// Users Index Page
-import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 
 export default function Index() {

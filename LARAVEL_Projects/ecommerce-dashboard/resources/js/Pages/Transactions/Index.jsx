@@ -1,5 +1,4 @@
-// Transactions Index Page
-import { useState } from 'react';
+import React, { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Link, router, useForm } from '@inertiajs/react';
 

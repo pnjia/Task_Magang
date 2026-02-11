@@ -1,4 +1,4 @@
-// Users Create Page
+import React from 'react';
 import { useForm, Link } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 

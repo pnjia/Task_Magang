@@ -1,5 +1,4 @@
-// Profile Edit Page
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 

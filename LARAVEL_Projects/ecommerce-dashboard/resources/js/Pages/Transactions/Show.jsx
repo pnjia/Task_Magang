@@ -1,4 +1,4 @@
-// Transaction Show Page
+import React from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Link } from '@inertiajs/react';
 

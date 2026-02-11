@@ -1,13 +1,35 @@
-// Transactions Create Page (POS/Kasir)
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
-import { useForm, router } from '@inertiajs/react';
+import { useForm, router, usePage } from '@inertiajs/react';
 
 export default function TransactionsCreate({ products }) {
+    const { flash } = usePage().props;
     const [search, setSearch] = useState('');
     const [cart, setCart] = useState([]);
     const [paymentAmount, setPaymentAmount] = useState(0);
     const [displayPayment, setDisplayPayment] = useState('');
+    const [showFlash, setShowFlash] = useState(false);
+
+    // Show flash message and auto-dismiss after 5 seconds
+    useEffect(() => {
+        if (flash.success || flash.error) {
+            setShowFlash(true);
+            
+            // Auto dismiss after 5 seconds
+            const timer = setTimeout(() => {
+                setShowFlash(false);
+            }, 5000);
+
+            // If success, clear cart and payment
+            if (flash.success) {
+                setCart([]);
+                setPaymentAmount(0);
+                setDisplayPayment('');
+            }
+
+            return () => clearTimeout(timer);
+        }
+    }, [flash]);
 
     // Filter products based on search
     const filteredProducts = useMemo(() => {
@@ -121,6 +143,62 @@ export default function TransactionsCreate({ products }) {
     return (
         <AppLayout title="Kasir (Point of Sales)">
             <div className="p-6">
+                {/* Flash Message Component */}
+                {showFlash && (flash.success || flash.error) && (
+                    <div className="mb-6 animate-fade-in-down">
+                        {flash.success && (
+                            <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-md shadow-md">
+                                <div className="flex items-start">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3 flex-1">
+                                        <h3 className="text-sm font-medium text-green-800">Pembayaran Berhasil!</h3>
+                                        <div className="mt-1 text-sm text-green-700">
+                                            {flash.success}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowFlash(false)}
+                                        className="ml-3 flex-shrink-0 text-green-400 hover:text-green-600"
+                                    >
+                                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                        {flash.error && (
+                            <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md shadow-md">
+                                <div className="flex items-start">
+                                    <div className="flex-shrink-0">
+                                        <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div className="ml-3 flex-1">
+                                        <h3 className="text-sm font-medium text-red-800">Pembayaran Gagal!</h3>
+                                        <div className="mt-1 text-sm text-red-700">
+                                            {flash.error}
+                                        </div>
+                                    </div>
+                                    <button 
+                                        onClick={() => setShowFlash(false)}
+                                        className="ml-3 flex-shrink-0 text-red-400 hover:text-red-600"
+                                    >
+                                        <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <div className="mb-6">
                     <h2 className="text-2xl font-bold text-gray-800">Kasir (POS)</h2>
                     <p className="text-gray-600 mt-1">Sistem Point of Sales untuk transaksi penjualan</p>
