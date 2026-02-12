@@ -8,6 +8,7 @@ use App\Models\TransactionDetail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB; // Wajib untuk fitur "Batalkan jika error"
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class TransactionController extends Controller
@@ -103,12 +104,19 @@ class TransactionController extends Controller
                     $detail['product_instance']->decrement('stock', $detail['quantity']);
                 }
 
-                // Sukses! Redirect ke History (bukan Create lagi)
-                return redirect()->route('transactions.history')
+                // Sukses! Redirect kembali ke halaman kasir untuk transaksi berikutnya
+                return redirect()->route('transactions.create')
                     ->with('success', 'Transaksi Berhasil! Invoice: '.$transaction->invoice_code.' | Kembalian: Rp '.number_format((float) $transaction->change_amount, 0, ',', '.'));
             });
 
         } catch (\Exception $e) {
+            // Log the error for debugging
+            \Illuminate\Support\Facades\Log::error('Transaction creation failed: '.$e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             // Jika ada error (stok kurang / uang kurang), kembali ke kasir dengan pesan error
             return back()->with('error', $e->getMessage());
         }

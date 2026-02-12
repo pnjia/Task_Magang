@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 class Transaction extends Model
 {
     //
-    use HasUuids, BelongsToTenant;
+    use BelongsToTenant, HasUuids;
 
     protected $guarded = ['id'];
 
@@ -20,7 +20,8 @@ class Transaction extends Model
         'transaction_date',
         'total_amount',
         'payment_amount',
-        'change_amount'
+        'change_amount',
+        'status',
     ];
 
     protected $casts = [
