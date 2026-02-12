@@ -14,15 +14,7 @@ export default defineConfig({
                 'app/Http/Requests/**',
             ],
         }),
-        react({
-            jsxImportSource: 'react',
-            jsxRuntime: 'automatic',
-            exclude: [/node_modules/, /\.config\..*/],
-            babel: {
-                babelrc: false,
-                configFile: false,
-            },
-        }),
+        react(),
     ],
     resolve: {
         alias: {
@@ -30,11 +22,8 @@ export default defineConfig({
         },
     },
     server: {
-        middlewareMode: false,
         hmr: {
             host: 'localhost',
-            port: 5173,
-            protocol: 'ws',
         },
     },
     optimizeDeps: {
