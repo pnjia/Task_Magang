@@ -1,4 +1,3 @@
-import React from 'react';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { useForm, Link } from '@inertiajs/react';
 

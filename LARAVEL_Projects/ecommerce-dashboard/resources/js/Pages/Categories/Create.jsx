@@ -1,4 +1,3 @@
-import React from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Link, useForm } from '@inertiajs/react';
 
