@@ -15,19 +15,21 @@ export default function TransactionsCreate({ products }) {
         if (flash.success || flash.error) {
             setShowFlash(true);
             
-            // Auto dismiss after 5 seconds
-            const timer = setTimeout(() => {
-                setShowFlash(false);
-            }, 5000);
-
-            // If success, clear cart and payment
+            // If success, redirect to history page after 2 seconds
             if (flash.success) {
-                setCart([]);
-                setPaymentAmount(0);
-                setDisplayPayment('');
+                const timer = setTimeout(() => {
+                    router.visit('/transactions/history');
+                }, 2000);
+                return () => clearTimeout(timer);
             }
-
-            return () => clearTimeout(timer);
+            
+            // If error, auto dismiss after 5 seconds
+            if (flash.error) {
+                const timer = setTimeout(() => {
+                    setShowFlash(false);
+                }, 5000);
+                return () => clearTimeout(timer);
+            }
         }
     }, [flash]);
 

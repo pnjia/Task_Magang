@@ -24,7 +24,7 @@ class TransactionController extends Controller
             ->get();
 
         return Inertia::render('Transactions/Create', [
-            'products' => $products
+            'products' => $products,
         ]);
     }
 
@@ -67,24 +67,26 @@ class TransactionController extends Controller
                         'price' => $product->price,
                         'subtotal' => $subtotal,
                         // Kurangi Stok Sekarang
-                        'product_instance' => $product
+                        'product_instance' => $product,
                     ];
                 }
 
                 // 3. Cek Uang Pembayaran
                 if ($request->payment_amount < $totalAmount) {
-                    throw new \Exception("Uang pembayaran kurang!");
+                    throw new \Exception('Uang pembayaran kurang!');
                 }
 
                 // 4. Simpan Header Transaksi
+                // Status: 'completed' karena sudah dibayar langsung saat checkout kasir
                 $transaction = Transaction::create([
                     // tenant_id otomatis diisi Trait
                     'user_id' => Auth::id(),
-                    'invoice_code' => 'INV-' . time(), // Contoh: INV-170123456
+                    'invoice_code' => 'INV-'.time(), // Contoh: INV-170123456
                     'transaction_date' => now(),
                     'total_amount' => $totalAmount,
                     'payment_amount' => $request->payment_amount,
                     'change_amount' => $request->payment_amount - $totalAmount,
+                    'status' => 'completed', // ✅ Kasir membayar langsung, jadi langsung completed
                 ]);
 
                 // 5. Simpan Detail & Update Stok Real
@@ -101,9 +103,9 @@ class TransactionController extends Controller
                     $detail['product_instance']->decrement('stock', $detail['quantity']);
                 }
 
-                // Sukses!
-                return redirect()->route('transactions.create')
-                    ->with('success', 'Transaksi Berhasil! Kembalian: Rp ' . number_format((float) $transaction->change_amount, 0, ',', '.'));
+                // Sukses! Redirect ke History (bukan Create lagi)
+                return redirect()->route('transactions.history')
+                    ->with('success', 'Transaksi Berhasil! Invoice: '.$transaction->invoice_code.' | Kembalian: Rp '.number_format((float) $transaction->change_amount, 0, ',', '.'));
             });
 
         } catch (\Exception $e) {
@@ -120,7 +122,7 @@ class TransactionController extends Controller
 
         // Filter berdasarkan invoice (pencarian)
         if ($request->filled('search')) {
-            $query->where('invoice_code', 'like', '%' . $request->search . '%');
+            $query->where('invoice_code', 'like', '%'.$request->search.'%');
         }
 
         // Filter berdasarkan rentang tanggal
@@ -141,10 +143,9 @@ class TransactionController extends Controller
 
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
-            'filters' => $request->only(['search', 'date_from', 'date_to', 'filter_status'])
+            'filters' => $request->only(['search', 'date_from', 'date_to', 'filter_status']),
         ]);
     }
-
 
     public function history(Request $request)
     {
@@ -154,7 +155,7 @@ class TransactionController extends Controller
 
         // Filter berdasarkan invoice (pencarian)
         if ($request->filled('search')) {
-            $query->where('invoice_code', 'like', '%' . $request->search . '%');
+            $query->where('invoice_code', 'like', '%'.$request->search.'%');
         }
 
         // Filter berdasarkan rentang tanggal
@@ -172,7 +173,7 @@ class TransactionController extends Controller
 
         return Inertia::render('Transactions/History', [
             'transactions' => $transactions,
-            'filters' => $request->only(['search', 'date_from', 'date_to'])
+            'filters' => $request->only(['search', 'date_from', 'date_to']),
         ]);
     }
 
@@ -185,7 +186,7 @@ class TransactionController extends Controller
         $transaction->load(['details.product', 'user']);
 
         return Inertia::render('Transactions/Show', [
-            'transaction' => $transaction
+            'transaction' => $transaction,
         ]);
     }
 
@@ -196,7 +197,7 @@ class TransactionController extends Controller
         }
 
         $validated = $request->validate([
-            'status' => 'required|in:unpaid,paid,processing,shipped,completed,cancelled'
+            'status' => 'required|in:unpaid,paid,processing,shipped,completed,cancelled',
         ]);
 
         $transaction->status = $validated['status'];
@@ -213,7 +214,7 @@ class TransactionController extends Controller
 
         $transaction->update([
             'payment_amount' => $transaction->total_amount,
-            'change_amount' => 0
+            'change_amount' => 0,
         ]);
 
         return redirect()->back()->with('success', 'Pembayaran berhasil dikonfirmasi!');
@@ -223,12 +224,12 @@ class TransactionController extends Controller
     {
         // 1. Cek Hak Akses (Keamanan)
         if ($transaction->tenant_id != Auth::user()->tenant_id) {
-            abort(403, "Anda tidak berhak mengubah pesanan ini.");
+            abort(403, 'Anda tidak berhak mengubah pesanan ini.');
         }
 
         // 2. Validasi Input
         $request->validate([
-            'status' => 'required|in:unpaid,paid,processing,shipped,completed,cancelled'
+            'status' => 'required|in:unpaid,paid,processing,shipped,completed,cancelled',
         ]);
 
         // 3. UPDATE SECARA MANUAL (LEBIH KUAT)
@@ -236,7 +237,6 @@ class TransactionController extends Controller
         $transaction->status = $request->status;
         $transaction->save();
 
-        return back()->with('success', 'Status pesanan berhasil diperbarui menjadi: ' . ucfirst($request->status));
+        return back()->with('success', 'Status pesanan berhasil diperbarui menjadi: '.ucfirst($request->status));
     }
-
 }
