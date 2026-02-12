@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -46,6 +47,11 @@ class HandleInertiaRequests extends Middleware
                     'tenant_id' => $request->user()->tenant_id,
                 ] : null,
             ],
+            'pendingOrdersCount' => fn() => $request->user()
+                ? Transaction::where('tenant_id', $request->user()->tenant_id)
+                    ->whereIn('status', ['unpaid', 'paid', 'processing', 'shipped'])
+                    ->count()
+                : 0,
             'flash' => [
                 'success' => fn() => $request->session()->get('success'),
                 'error' => fn() => $request->session()->get('error'),
