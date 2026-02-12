@@ -6,9 +6,23 @@ export default defineConfig({
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.jsx'],
-            refresh: true,
+            refresh: [
+                'resources/views/**',
+                'routes/**',
+                'app/Http/Controllers/**',
+                'app/Models/**',
+                'app/Http/Requests/**',
+            ],
         }),
-        react(),
+        react({
+            jsxImportSource: 'react',
+            jsxRuntime: 'automatic',
+            exclude: [/node_modules/, /\.config\..*/],
+            babel: {
+                babelrc: false,
+                configFile: false,
+            },
+        }),
     ],
     resolve: {
         alias: {
@@ -16,8 +30,14 @@ export default defineConfig({
         },
     },
     server: {
+        middlewareMode: false,
         hmr: {
             host: 'localhost',
+            port: 5173,
+            protocol: 'ws',
         },
+    },
+    optimizeDeps: {
+        include: ['react', 'react-dom', '@inertiajs/react'],
     },
 });

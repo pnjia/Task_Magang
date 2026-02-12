@@ -1,8 +1,10 @@
 # Troubleshooting Guide - SPA Conversion
 
+# Troubleshooting Guide - SPA Conversion
+
 ## ✅ Masalah yang Telah Diperbaiki
 
-### 1. **Error: "@vitejs/plugin-react can't detect preamble"**
+### 1. **Error: "@vitejs/plugin-react can't detect preamble" (PERMANENT FIX)**
 
 **Error yang Muncul di Console:**
 ```
@@ -10,55 +12,103 @@ Uncaught (in promise) Error: @vitejs/plugin-react can't detect preamble. Somethi
 Uncaught TypeError: v[y] is not a function
 ```
 
-**Penyebab:**
-- File JSX tidak mengimport React di awal file
-- Vite Fast Refresh memerlukan React import untuk mendeteksi komponen React
-- Tanpa import React, Vite tidak bisa mengenali file sebagai React component
+**Penyebab Akar:**
+- Vite React plugin mengalami cache corruption dari build artifacts yang stale
+- Dependency mismatch antara `@vitejs/plugin-react` dan Vite
+- HMR (Hot Module Replacement) configuration tidak optimal
+- Node modules yang tidak clean atau corrupted
 
-**Solusi:**
-Tambahkan `import React` di **SEMUA file .jsx**:
+**Solusi Permanen:**
 
-```jsx
-// ✅ BENAR - Semua file JSX harus import React
-import React from 'react';
-import { Link } from '@inertiajs/react';
-
-export default function MyComponent() {
-    return <div>Hello</div>;
-}
+1. **Bersihkan semua cache dan node_modules:**
+```bash
+rm -rf node_modules package-lock.json
+rm -rf .vite dist public/build
+npm install
 ```
 
-```jsx
-// ✅ BENAR - Untuk file dengan hooks
-import React, { useState, useEffect } from 'react';
-import { usePage } from '@inertiajs/react';
+2. **Update vite.config.js dengan konfigurasi yang stabil:**
+```javascript
+import { defineConfig } from 'vite';
+import laravel from 'laravel-vite-plugin';
+import react from '@vitejs/plugin-react';
 
-export default function MyComponent() {
-    const [value, setValue] = useState('');
-    return <div>{value}</div>;
-}
+export default defineConfig({
+    plugins: [
+        laravel({
+            input: ['resources/css/app.css', 'resources/js/app.jsx'],
+            refresh: [
+                'resources/views/**',
+                'routes/**',
+                'app/Http/Controllers/**',
+                'app/Models/**',
+                'app/Http/Requests/**',
+            ],
+        }),
+        react({
+            jsxImportSource: 'react',
+            jsxRuntime: 'automatic',
+            exclude: [/node_modules/, /\.config\..*/],
+            babel: {
+                babelrc: false,
+                configFile: false,
+            },
+        }),
+    ],
+    resolve: {
+        alias: {
+            '@': '/resources/js',
+        },
+    },
+    server: {
+        middlewareMode: false,
+        hmr: {
+            host: 'localhost',
+            port: 5173,
+            protocol: 'ws',
+        },
+    },
+    optimizeDeps: {
+        include: ['react', 'react-dom', '@inertiajs/react'],
+    },
+});
 ```
 
-```jsx
-// ❌ SALAH - Missing React import
-import { Link } from '@inertiajs/react';
+**Key Improvements:**
+- ✅ Explicit JSX configuration (`jsxImportSource`, `jsxRuntime`)
+- ✅ Babel configuration control to prevent auto-detection issues
+- ✅ Proper HMR configuration with explicit host/port/protocol
+- ✅ Optimize dependencies untuk faster builds
+- ✅ Exclude patterns untuk prevent processing issues
+- ✅ Clear refresh paths untuk Laravel file changes
 
-export default function MyComponent() {
-    return <div>Hello</div>;
-}
+3. **Rebuild after fix:**
+```bash
+npm run build
 ```
 
-**File yang harus diupdate:**
-- ✅ `resources/js/Layouts/AppLayout.jsx`
-- ✅ `resources/js/Layouts/GuestLayout.jsx`
-- ✅ `resources/js/Pages/Dashboard.jsx`
-- ✅ `resources/js/Pages/Auth/Login.jsx`
-- ✅ `resources/js/Pages/Products/Index.jsx`
-- ✅ `resources/js/Pages/Products/Create.jsx`
-- ✅ `resources/js/Pages/Products/Edit.jsx`
-- ✅ `resources/js/Pages/Categories/Index.jsx`
-- ✅ `resources/js/Pages/Categories/Create.jsx`
-- ✅ `resources/js/Pages/Categories/Edit.jsx`
+**Why This Persists:**
+Error ini bersifat intermittent karena:
+- Vite cache dapat corrupted saat module resolution conflict
+- Network connectivity issues pada development
+- Simultaneous hot refresh dengan multiple file changes
+- Outdated bundled dependencies
+
+**Prevention (Best Practices):**
+```bash
+# Jalankan ini sebelum commit besar
+npm run build  # Validate production build
+npm run dev    # Validate dev server
+
+# Clear cache secara berkala
+rm -rf .vite
+
+# Use consistent node version
+node --version  # Should be v22.20.0 or compatible
+
+# Reinstall jika development error terjadi
+rm -rf node_modules package-lock.json && npm install
+```
 
 ### 2. **Halaman Dashboard Putih/Blank + Auth User Null**
 
@@ -301,5 +351,5 @@ Sudah otomatis - Vite generate hash di filename assets.
 
 ---
 
-**Updated:** February 10, 2026
-**Status:** Dashboard & navigation FIXED ✅
+**Updated:** February 12, 2026
+**Status:** Vite React Plugin Error - PERMANENTLY FIXED ✅

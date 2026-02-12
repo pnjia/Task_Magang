@@ -12,16 +12,17 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
-use Illuminate\View\View;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class RegisteredUserController extends Controller
 {
     /**
      * Display the registration view.
      */
-    public function create(): View
+    public function create(): Response
     {
-        return view('auth.register');
+        return Inertia::render('Auth/Register');
     }
 
     /**
@@ -35,14 +36,14 @@ class RegisteredUserController extends Controller
             'store_name' => ['required', 'string', 'max:255', 'unique:tenants,name'],
             'phone' => ['required', 'string', 'max:20'], // Validasi No HP
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
         // Buat Tenant dengan No HP
         $tenant = Tenant::create([
             'name' => $request->store_name,
-            'slug' => Str::slug($request->store_name) . '-' . Str::random(4),
+            'slug' => Str::slug($request->store_name).'-'.Str::random(4),
             'phone' => $request->phone, // <--- SIMPAN KE DATABASE (Akan otomatis diformat jadi 62 oleh Model)
         ]);
 
