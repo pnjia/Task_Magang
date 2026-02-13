@@ -97,6 +97,23 @@ class ProductController extends Controller
         }
     }
 
+    public function show(Product $product)
+    {
+        if ($product->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'product' => $product->load('category'),
+            ]);
+        } else {
+            return Inertia::render('Products/Show', [
+                'product' => $product->load('category'),
+            ]);
+        }
+    }
+
     public function edit(Product $product)
     {
         $categories = Category::all();

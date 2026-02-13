@@ -58,6 +58,23 @@ class UserController extends Controller
         }
     }
 
+    public function show(User $user)
+    {
+        if ($user->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'user' => $user,
+            ]);
+        } else {
+            return Inertia::render('Users/Show', [
+                'user' => $user,
+            ]);
+        }
+    }
+
     public function updateRole(Request $request, User $user)
     {
         $request->validate([

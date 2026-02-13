@@ -49,6 +49,23 @@ class CategoryController extends Controller
         }
     }
 
+    public function show(Category $category)
+    {
+        if ($category->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'category' => $category,
+            ]);
+        } else {
+            return Inertia::render('Categories/Show', [
+                'category' => $category,
+            ]);
+        }
+    }
+
     public function edit(Category $category)
     {
         if (request()->is('api/*') || request()->wantsJson()) {
