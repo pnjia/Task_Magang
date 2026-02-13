@@ -24,6 +24,10 @@ class Transaction extends Model
         'status',
     ];
 
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
     protected $casts = [
         'transaction_date' => 'datetime',
         'total_amount' => 'decimal:2',

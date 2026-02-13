@@ -14,6 +14,10 @@ class Category extends Model
 
     protected $fillable = ['name', 'slug', 'tenant_id'];
 
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
     public function products()
     {
         return $this->hasMany(Product::class);

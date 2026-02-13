@@ -27,6 +27,10 @@ class User extends Authenticatable
         'tenant_id', // Pastikan ada
     ];
 
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
     /**
      * The attributes that should be hidden for serialization.
      *

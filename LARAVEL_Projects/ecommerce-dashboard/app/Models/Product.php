@@ -24,6 +24,10 @@ class Product extends Model
         'tenant_id'
     ];
 
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
     public function category()
     {
         return $this->belongsTo(Category::class);
