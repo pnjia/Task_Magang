@@ -19,9 +19,21 @@ export default function Dashboard({
     return (
         <AppLayout title="Dashboard">
             <div className="p-6">
-                <div className="mb-6">
-                    <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
-                    <p className="text-gray-600 mt-1">Ringkasan bisnis dan performa toko Anda</p>
+                <div className="mb-6 flex items-center justify-between">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-800">Dashboard</h2>
+                        <p className="text-gray-600 mt-1">Ringkasan bisnis dan performa toko Anda</p>
+                    </div>
+                    <a
+                        href="/dashboard/export-sales"
+                        className="inline-flex items-center bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition duration-150 ease-in-out"
+                    >
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        Ekspor Data
+                    </a>
                 </div>
 
                 {/* Stats Cards */}

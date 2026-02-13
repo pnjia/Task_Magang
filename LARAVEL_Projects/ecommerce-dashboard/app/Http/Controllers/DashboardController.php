@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\SalesExport;
 use App\Models\Product;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Maatwebsite\Excel\Facades\Excel;
 
 class DashboardController extends Controller
 {
@@ -34,5 +36,15 @@ class DashboardController extends Controller
             'lowStockProducts' => $lowStockProducts,
             'recentTransactions' => $recentTransactions,
         ]);
+    }
+
+    /**
+     * Export laporan penjualan ke Excel.
+     */
+    public function exportSales()
+    {
+        $filename = 'laporan-penjualan-' . now()->format('Y-m-d') . '.xlsx';
+
+        return Excel::download(new SalesExport, $filename);
     }
 }

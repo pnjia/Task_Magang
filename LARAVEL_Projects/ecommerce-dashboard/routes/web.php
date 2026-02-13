@@ -49,6 +49,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Dashboard (Gunakan Controller, HAPUS route default di atas tadi)
         // PENTING: Namanya harus 'dashboard', bukan 'dashboard.index'
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard/export-sales', [DashboardController::class, 'exportSales'])->name('dashboard.exportSales');
 
         // Manajemen Produk & Kategori
         Route::resource('categories', CategoryController::class);
