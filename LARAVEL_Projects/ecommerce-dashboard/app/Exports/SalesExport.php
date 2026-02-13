@@ -83,8 +83,17 @@ class SalesExport implements FromQuery, WithHeadings, WithMapping, WithStyles, S
     public function map($detail): array
     {
         $this->rowNumber++;
-        $date = $detail->transaction?->created_at?->format('d/m/Y') ?? '-';
-        $time = $detail->transaction?->created_at?->format('H:i') ?? '-';
+        // Use transaction_date stored in DB and convert to Asia/Jakarta when formatting
+        $transDt = $detail->transaction?->transaction_date;
+        if ($transDt) {
+            // Treat stored DB value as UTC and convert to Asia/Jakarta
+            $dt = \Carbon\Carbon::parse($transDt, 'UTC')->setTimezone('Asia/Jakarta');
+            $date = $dt->format('d/m/Y');
+            $time = $dt->format('H:i');
+        } else {
+            $date = '-';
+            $time = '-';
+        }
 
         return [
             $this->rowNumber,

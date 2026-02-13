@@ -1,5 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { Link } from '@inertiajs/react';
+import { formatDateTime } from '@/Utils/formatDate';
 
 export default function TransactionsShow({ transaction }) {
     const formatRupiah = (number) => {
@@ -8,16 +9,6 @@ export default function TransactionsShow({ transaction }) {
             currency: 'IDR',
             minimumFractionDigits: 0
         }).format(number);
-    };
-
-    const formatDate = (dateString) => {
-        return new Date(dateString).toLocaleDateString('id-ID', {
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
     };
 
     const getStatusBadge = (status) => {
@@ -64,9 +55,9 @@ export default function TransactionsShow({ transaction }) {
                     <div>Struk Pembelian</div>
                 </div>
                 
-                <div class="info">
+                    <div class="info">
                     <div><strong>Invoice:</strong> ${transaction.invoice_code}</div>
-                    <div><strong>Tanggal:</strong> ${formatDate(transaction.transaction_date)}</div>
+                    <div><strong>Tanggal:</strong> ${formatDateTime(transaction.created_at)}</div>
                     <div><strong>Kasir:</strong> ${transaction.user?.name || '-'}</div>
                     ${transaction.customer_name ? `<div><strong>Pelanggan:</strong> ${transaction.customer_name}</div>` : ''}
                 </div>
@@ -161,7 +152,7 @@ export default function TransactionsShow({ transaction }) {
                                 </div>
                                 <div>
                                     <label className="text-sm text-gray-600">Tanggal Transaksi</label>
-                                    <p className="font-semibold text-gray-900">{formatDate(transaction.transaction_date)}</p>
+                                    <p className="font-semibold text-gray-900">{formatDateTime(transaction.created_at)}</p>
                                 </div>
                                 <div>
                                     <label className="text-sm text-gray-600">Kasir</label>

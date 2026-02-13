@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import AppLayout from '@/Layouts/AppLayout';
 import { Link, router } from '@inertiajs/react';
+import { formatDateTime } from '@/Utils/formatDate';
 
 export default function TransactionsHistory({ transactions, filters }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -14,17 +15,6 @@ export default function TransactionsHistory({ transactions, filters }) {
             currency: 'IDR',
             minimumFractionDigits: 0
         }).format(number).replace('IDR', 'Rp');
-    };
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
     };
 
     const getStatusBadge = (status) => {
@@ -150,7 +140,7 @@ export default function TransactionsHistory({ transactions, filters }) {
                                         {transactions.data.map(transaction => (
                                             <tr key={transaction.id}>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {formatDate(transaction.transaction_date)}
+                                                    {formatDateTime(transaction.created_at)}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                     {transaction.invoice_code}

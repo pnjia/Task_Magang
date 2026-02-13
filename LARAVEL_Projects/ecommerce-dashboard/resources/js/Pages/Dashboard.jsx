@@ -1,5 +1,6 @@
 import AppLayout from '@/Layouts/AppLayout';
 import { Link } from '@inertiajs/react';
+import { formatRelativeTime } from '@/Utils/formatDate';
 
 export default function Dashboard({ 
     totalRevenue, 
@@ -109,7 +110,7 @@ export default function Dashboard({
                             <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                                 <h3 className="font-bold text-gray-700">Transaksi Terakhir</h3>
                                 <Link 
-                                    href="/transactions"
+                                    href="/transactions/history"
                                     className="text-xs text-indigo-600 hover:underline font-semibold">
                                     SEMUA
                                 </Link>
@@ -132,7 +133,7 @@ export default function Dashboard({
                                                         {formatCurrency(trx.total_amount)}
                                                     </td>
                                                     <td className="px-4 py-3 text-right text-xs text-gray-500">
-                                                        {trx.transaction_date_human}
+                                                        {formatRelativeTime(trx.created_at)}
                                                     </td>
                                                 </tr>
                                             ))

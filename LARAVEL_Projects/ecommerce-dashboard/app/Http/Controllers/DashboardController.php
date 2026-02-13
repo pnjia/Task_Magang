@@ -25,6 +25,8 @@ class DashboardController extends Controller
                 'id' => $transaction->id,
                 'invoice_code' => $transaction->invoice_code,
                 'total_amount' => $transaction->total_amount,
+                // include created_at so frontend can compute relative time from DB timestamp
+                'created_at' => $transaction->created_at?->toDateTimeString(),
                 'transaction_date_human' => $transaction->transaction_date->diffForHumans(),
             ];
         });

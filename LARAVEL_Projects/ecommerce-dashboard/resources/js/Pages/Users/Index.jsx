@@ -1,19 +1,11 @@
 import { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
+import { formatDate } from '@/Utils/formatDate';
 
 export default function Index() {
     const { users, auth } = usePage().props;
     const [updatingRole, setUpdatingRole] = useState(null);
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('id-ID', {
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric'
-        });
-    };
 
     const getRoleBadge = (role) => {
         const badges = {

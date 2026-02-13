@@ -82,8 +82,9 @@ class TransactionController extends Controller
                 $transaction = Transaction::create([
                     // tenant_id otomatis diisi Trait
                     'user_id' => Auth::id(),
-                    'invoice_code' => 'INV-'.time(), // Contoh: INV-170123456
-                    'transaction_date' => now(),
+                    'invoice_code' => 'INV-' . time(), // Contoh: INV-170123456
+                    // Store transaction date/time in UTC (DB should keep timestamps in UTC)
+                    'transaction_date' => now()->setTimezone('UTC'),
                     'total_amount' => $totalAmount,
                     'payment_amount' => $request->payment_amount,
                     'change_amount' => $request->payment_amount - $totalAmount,
@@ -106,12 +107,12 @@ class TransactionController extends Controller
 
                 // Sukses! Redirect kembali ke halaman kasir untuk transaksi berikutnya
                 return redirect()->route('transactions.create')
-                    ->with('success', 'Transaksi Berhasil! Invoice: '.$transaction->invoice_code.' | Kembalian: Rp '.number_format((float) $transaction->change_amount, 0, ',', '.'));
+                    ->with('success', 'Transaksi Berhasil! Invoice: ' . $transaction->invoice_code . ' | Kembalian: Rp ' . number_format((float) $transaction->change_amount, 0, ',', '.'));
             });
 
         } catch (\Exception $e) {
             // Log the error for debugging
-            \Illuminate\Support\Facades\Log::error('Transaction creation failed: '.$e->getMessage(), [
+            \Illuminate\Support\Facades\Log::error('Transaction creation failed: ' . $e->getMessage(), [
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
@@ -130,7 +131,7 @@ class TransactionController extends Controller
 
         // Filter berdasarkan invoice (pencarian)
         if ($request->filled('search')) {
-            $query->where('invoice_code', 'like', '%'.$request->search.'%');
+            $query->where('invoice_code', 'like', '%' . $request->search . '%');
         }
 
         // Filter berdasarkan rentang tanggal
@@ -149,6 +150,21 @@ class TransactionController extends Controller
 
         $transactions = $query->latest()->paginate(10)->withQueryString();
 
+        // Ensure frontend receives formatted date/time using Asia/Jakarta
+        $transactions->getCollection()->transform(function ($item) {
+            if ($item->transaction_date) {
+                // Treat stored value as UTC and convert to Asia/Jakarta for display
+                $dt = \Carbon\Carbon::parse($item->transaction_date, 'UTC')->setTimezone('Asia/Jakarta');
+                $item->transaction_date_formatted = $dt->format('d/m/Y');
+                $item->transaction_time_formatted = $dt->format('H:i');
+            } else {
+                $item->transaction_date_formatted = '-';
+                $item->transaction_time_formatted = '-';
+            }
+
+            return $item;
+        });
+
         return Inertia::render('Transactions/Index', [
             'transactions' => $transactions,
             'filters' => $request->only(['search', 'date_from', 'date_to', 'filter_status']),
@@ -163,7 +179,7 @@ class TransactionController extends Controller
 
         // Filter berdasarkan invoice (pencarian)
         if ($request->filled('search')) {
-            $query->where('invoice_code', 'like', '%'.$request->search.'%');
+            $query->where('invoice_code', 'like', '%' . $request->search . '%');
         }
 
         // Filter berdasarkan rentang tanggal
@@ -179,6 +195,21 @@ class TransactionController extends Controller
 
         $transactions = $query->latest()->paginate(10)->withQueryString();
 
+        // Ensure frontend receives formatted date/time using Asia/Jakarta
+        $transactions->getCollection()->transform(function ($item) {
+            if ($item->transaction_date) {
+                // Treat stored value as UTC and convert to Asia/Jakarta for display
+                $dt = \Carbon\Carbon::parse($item->transaction_date, 'UTC')->setTimezone('Asia/Jakarta');
+                $item->transaction_date_formatted = $dt->format('d/m/Y');
+                $item->transaction_time_formatted = $dt->format('H:i');
+            } else {
+                $item->transaction_date_formatted = '-';
+                $item->transaction_time_formatted = '-';
+            }
+
+            return $item;
+        });
+
         return Inertia::render('Transactions/History', [
             'transactions' => $transactions,
             'filters' => $request->only(['search', 'date_from', 'date_to']),
@@ -192,6 +223,16 @@ class TransactionController extends Controller
         }
 
         $transaction->load(['details.product', 'user']);
+
+        // Provide formatted date/time to frontend (Asia/Jakarta)
+        if ($transaction->transaction_date) {
+            $dt = \Carbon\Carbon::parse($transaction->transaction_date, 'UTC')->setTimezone('Asia/Jakarta');
+            $transaction->transaction_date_formatted = $dt->format('d/m/Y');
+            $transaction->transaction_time_formatted = $dt->format('H:i');
+        } else {
+            $transaction->transaction_date_formatted = '-';
+            $transaction->transaction_time_formatted = '-';
+        }
 
         return Inertia::render('Transactions/Show', [
             'transaction' => $transaction,
@@ -245,6 +286,6 @@ class TransactionController extends Controller
         $transaction->status = $request->status;
         $transaction->save();
 
-        return back()->with('success', 'Status pesanan berhasil diperbarui menjadi: '.ucfirst($request->status));
+        return back()->with('success', 'Status pesanan berhasil diperbarui menjadi: ' . ucfirst($request->status));
     }
 }
