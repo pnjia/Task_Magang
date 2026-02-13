@@ -110,7 +110,10 @@ export default function AppLayout({ title, children }) {
                                 </svg>
                                 Pesanan Masuk
                                 {pendingOrdersCount > 0 && (
-                                    <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                                    <span
+                                        className="ml-auto inline-flex items-center justify-center h-5 w-5 text-xs font-bold leading-none text-white bg-red-500 rounded-full"
+                                        aria-label={`${pendingOrdersCount} pending orders`}
+                                    >
                                         {pendingOrdersCount > 99 ? '99+' : pendingOrdersCount}
                                     </span>
                                 )}
