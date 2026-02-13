@@ -77,6 +77,10 @@ class UserController extends Controller
 
     public function updateRole(Request $request, User $user)
     {
+        if ($user->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
         $request->validate([
             'role' => 'required|in:owner,cashier'
         ]);
@@ -100,6 +104,10 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
+        if ($user->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
         if ($user->id === auth()->id()) {
             if (request()->is('api/*') || request()->wantsJson()) {
                 return response()->json(['error' => 'Dilarang menghapus akun sendiri!'], 400);

@@ -68,6 +68,10 @@ class CategoryController extends Controller
 
     public function edit(Category $category)
     {
+        if ($category->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
         if (request()->is('api/*') || request()->wantsJson()) {
             return response()->json([
                 'category' => $category,
@@ -81,6 +85,10 @@ class CategoryController extends Controller
 
     public function update(Request $request, Category $category)
     {
+        if ($category->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|alpha_dash',
@@ -97,6 +105,10 @@ class CategoryController extends Controller
 
     public function destroy(Category $category)
     {
+        if ($category->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
         $category->delete();
 
         if (request()->is('api/*') || request()->wantsJson()) {

@@ -116,6 +116,10 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
+        if ($product->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
         $categories = Category::all();
         if (request()->is('api/*') || request()->wantsJson()) {
             return response()->json([
@@ -132,6 +136,10 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        if ($product->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
         // 1. Validasi Input
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -171,6 +179,10 @@ class ProductController extends Controller
 
     public function destroy(Product $product)
     {
+        if ($product->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
         Gate::authorize('delete-product');
 
         if ($product->image) {
