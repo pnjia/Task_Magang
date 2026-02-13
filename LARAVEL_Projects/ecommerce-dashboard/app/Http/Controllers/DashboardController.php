@@ -31,13 +31,23 @@ class DashboardController extends Controller
             ];
         });
 
-        return Inertia::render('Dashboard', [
-            'totalProducts' => $totalProducts,
-            'totalTransactions' => $totalTransactions,
-            'totalRevenue' => $totalRevenue,
-            'lowStockProducts' => $lowStockProducts,
-            'recentTransactions' => $recentTransactions,
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'totalProducts' => $totalProducts,
+                'totalTransactions' => $totalTransactions,
+                'totalRevenue' => $totalRevenue,
+                'lowStockProducts' => $lowStockProducts,
+                'recentTransactions' => $recentTransactions,
+            ]);
+        } else {
+            return Inertia::render('Dashboard', [
+                'totalProducts' => $totalProducts,
+                'totalTransactions' => $totalTransactions,
+                'totalRevenue' => $totalRevenue,
+                'lowStockProducts' => $lowStockProducts,
+                'recentTransactions' => $recentTransactions,
+            ]);
+        }
     }
 
     /**

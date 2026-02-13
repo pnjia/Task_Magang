@@ -14,14 +14,24 @@ class UserController extends Controller
     {
         $users = User::where('tenant_id', auth()->user()->tenant_id)->where('role', '!=', 'customer')->orderBy('created_at', 'desc')->paginate(10);
 
-        return Inertia::render('Users/Index', [
-            'users' => $users,
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'users' => $users,
+            ]);
+        } else {
+            return Inertia::render('Users/Index', [
+                'users' => $users,
+            ]);
+        }
     }
 
     public function create()
     {
-        return Inertia::render('Users/Create');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([]);
+        } else {
+            return Inertia::render('Users/Create');
+        }
     }
 
     public function store(Request $request)
@@ -32,7 +42,7 @@ class UserController extends Controller
             'role' => ['required', 'in:owner,cashier'],
         ]);
 
-        User::create([
+        $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
@@ -41,8 +51,11 @@ class UserController extends Controller
             'email_verified_at' => now(),
         ]);
 
-        return redirect()->route('users.index')->with('success', 'Staff baru berhasil ditambahkan.');
-        ;
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['user' => $user, 'message' => 'Staff baru berhasil ditambahkan.']);
+        } else {
+            return redirect()->route('users.index')->with('success', 'Staff baru berhasil ditambahkan.');
+        }
     }
 
     public function updateRole(Request $request, User $user)
@@ -52,21 +65,37 @@ class UserController extends Controller
         ]);
 
         if ($user->id === auth()->id() && $request->role !== 'owner') {
-            return back()->with('error', 'Anda tidak bisa menurunkan jabatan akun sendiri!');
+            if (request()->is('api/*') || request()->wantsJson()) {
+                return response()->json(['error' => 'Anda tidak bisa menurunkan jabatan akun sendiri!'], 400);
+            } else {
+                return back()->with('error', 'Anda tidak bisa menurunkan jabatan akun sendiri!');
+            }
         }
 
         $user->update(['role' => $request->role]);
 
-        return back()->with('success', 'Peran pengguna berhasil diperbarui.');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['user' => $user, 'message' => 'Peran pengguna berhasil diperbarui.']);
+        } else {
+            return back()->with('success', 'Peran pengguna berhasil diperbarui.');
+        }
     }
 
     public function destroy(User $user)
     {
         if ($user->id === auth()->id()) {
-            return back()->with('error', 'Dilarang menghapus akun sendiri!');
+            if (request()->is('api/*') || request()->wantsJson()) {
+                return response()->json(['error' => 'Dilarang menghapus akun sendiri!'], 400);
+            } else {
+                return back()->with('error', 'Dilarang menghapus akun sendiri!');
+            }
         }
 
         $user->delete();
-        return back()->with('success', 'User berhasil dihapus.');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['message' => 'User berhasil dihapus.']);
+        } else {
+            return back()->with('success', 'User berhasil dihapus.');
+        }
     }
 }

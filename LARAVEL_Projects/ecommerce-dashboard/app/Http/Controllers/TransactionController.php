@@ -24,9 +24,15 @@ class TransactionController extends Controller
             ->orderBy('name')
             ->get();
 
-        return Inertia::render('Transactions/Create', [
-            'products' => $products,
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'products' => $products,
+            ]);
+        } else {
+            return Inertia::render('Transactions/Create', [
+                'products' => $products,
+            ]);
+        }
     }
 
     /**
@@ -106,8 +112,12 @@ class TransactionController extends Controller
                 }
 
                 // Sukses! Redirect kembali ke halaman kasir untuk transaksi berikutnya
-                return redirect()->route('transactions.create')
-                    ->with('success', 'Transaksi Berhasil! Invoice: ' . $transaction->invoice_code . ' | Kembalian: Rp ' . number_format((float) $transaction->change_amount, 0, ',', '.'));
+                if (request()->is('api/*') || request()->wantsJson()) {
+                    return response()->json(['transaction' => $transaction, 'message' => 'Transaksi Berhasil! Invoice: ' . $transaction->invoice_code . ' | Kembalian: Rp ' . number_format((float) $transaction->change_amount, 0, ',', '.')]);
+                } else {
+                    return redirect()->route('transactions.create')
+                        ->with('success', 'Transaksi Berhasil! Invoice: ' . $transaction->invoice_code . ' | Kembalian: Rp ' . number_format((float) $transaction->change_amount, 0, ',', '.'));
+                }
             });
 
         } catch (\Exception $e) {
@@ -165,10 +175,17 @@ class TransactionController extends Controller
             return $item;
         });
 
-        return Inertia::render('Transactions/Index', [
-            'transactions' => $transactions,
-            'filters' => $request->only(['search', 'date_from', 'date_to', 'filter_status']),
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'transactions' => $transactions,
+                'filters' => $request->only(['search', 'date_from', 'date_to', 'filter_status']),
+            ]);
+        } else {
+            return Inertia::render('Transactions/Index', [
+                'transactions' => $transactions,
+                'filters' => $request->only(['search', 'date_from', 'date_to', 'filter_status']),
+            ]);
+        }
     }
 
     public function history(Request $request)
@@ -210,10 +227,17 @@ class TransactionController extends Controller
             return $item;
         });
 
-        return Inertia::render('Transactions/History', [
-            'transactions' => $transactions,
-            'filters' => $request->only(['search', 'date_from', 'date_to']),
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'transactions' => $transactions,
+                'filters' => $request->only(['search', 'date_from', 'date_to']),
+            ]);
+        } else {
+            return Inertia::render('Transactions/History', [
+                'transactions' => $transactions,
+                'filters' => $request->only(['search', 'date_from', 'date_to']),
+            ]);
+        }
     }
 
     public function show(Transaction $transaction)
@@ -234,9 +258,15 @@ class TransactionController extends Controller
             $transaction->transaction_time_formatted = '-';
         }
 
-        return Inertia::render('Transactions/Show', [
-            'transaction' => $transaction,
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'transaction' => $transaction,
+            ]);
+        } else {
+            return Inertia::render('Transactions/Show', [
+                'transaction' => $transaction,
+            ]);
+        }
     }
 
     public function updateStatus(Request $request, Transaction $transaction)
@@ -252,7 +282,11 @@ class TransactionController extends Controller
         $transaction->status = $validated['status'];
         $transaction->save();
 
-        return redirect()->route('transactions.index')->with('success', 'Status berhasil diupdate!');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['transaction' => $transaction, 'message' => 'Status berhasil diupdate!']);
+        } else {
+            return redirect()->route('transactions.index')->with('success', 'Status berhasil diupdate!');
+        }
     }
 
     public function confirmPayment(Transaction $transaction)
@@ -266,7 +300,11 @@ class TransactionController extends Controller
             'change_amount' => 0,
         ]);
 
-        return redirect()->back()->with('success', 'Pembayaran berhasil dikonfirmasi!');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['transaction' => $transaction, 'message' => 'Pembayaran berhasil dikonfirmasi!']);
+        } else {
+            return redirect()->back()->with('success', 'Pembayaran berhasil dikonfirmasi!');
+        }
     }
 
     public function update(Request $request, Transaction $transaction)
@@ -286,6 +324,10 @@ class TransactionController extends Controller
         $transaction->status = $request->status;
         $transaction->save();
 
-        return back()->with('success', 'Status pesanan berhasil diperbarui menjadi: ' . ucfirst($request->status));
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['transaction' => $transaction, 'message' => 'Status pesanan berhasil diperbarui menjadi: ' . ucfirst($request->status)]);
+        } else {
+            return back()->with('success', 'Status pesanan berhasil diperbarui menjadi: ' . ucfirst($request->status));
+        }
     }
 }

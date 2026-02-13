@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,8 +16,15 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): Response
+    public function create(): Response|JsonResponse
     {
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'canResetPassword' => true,
+                'status' => session('status'),
+            ]);
+        }
+
         return Inertia::render('Auth/Login', [
             'canResetPassword' => true,
             'status' => session('status'),
@@ -26,9 +34,19 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): RedirectResponse|JsonResponse
     {
         $request->authenticate();
+
+        if ($request->wantsJson()) {
+            $user = $request->user();
+            $token = $user->createToken('API Token')->plainTextToken;
+            return response()->json([
+                'user' => $user,
+                'token' => $token,
+                'message' => 'Login successful',
+            ]);
+        }
 
         $request->session()->regenerate();
 
@@ -42,17 +60,20 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('transactions.create');
         }
 
-
-
-
         return redirect()->route('dashboard');
     }
 
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): RedirectResponse|JsonResponse
     {
+        if ($request->wantsJson()) {
+            // API logout: just revoke the current token
+            $request->user()->currentAccessToken()->delete();
+            return response()->json(['message' => 'Logged out successfully']);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

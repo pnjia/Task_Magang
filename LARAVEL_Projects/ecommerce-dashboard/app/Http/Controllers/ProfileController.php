@@ -17,9 +17,15 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
-        return Inertia::render('Profile/Edit', [
-            'user' => $request->user(),
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'user' => $request->user(),
+            ]);
+        } else {
+            return Inertia::render('Profile/Edit', [
+                'user' => $request->user(),
+            ]);
+        }
     }
 
     /**
@@ -35,7 +41,11 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['user' => $request->user(), 'message' => 'Profile updated successfully.']);
+        } else {
+            return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        }
     }
 
     /**
@@ -52,7 +62,11 @@ class ProfileController extends Controller
             'password' => bcrypt($validated['password']),
         ]);
 
-        return back()->with('status', 'password-updated');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['message' => 'Password updated successfully.']);
+        } else {
+            return back()->with('status', 'password-updated');
+        }
     }
 
     /**
@@ -73,6 +87,10 @@ class ProfileController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['message' => 'Account deleted successfully.']);
+        } else {
+            return Redirect::to('/');
+        }
     }
 }

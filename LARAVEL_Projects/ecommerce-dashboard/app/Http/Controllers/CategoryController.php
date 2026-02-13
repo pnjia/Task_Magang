@@ -13,14 +13,24 @@ class CategoryController extends Controller
     {
         $categories = Category::latest()->paginate(10);
 
-        return Inertia::render('Categories/Index', [
-            'categories' => $categories,
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'categories' => $categories,
+            ]);
+        } else {
+            return Inertia::render('Categories/Index', [
+                'categories' => $categories,
+            ]);
+        }
     }
 
     public function create()
     {
-        return Inertia::render('Categories/Create');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([]);
+        } else {
+            return Inertia::render('Categories/Create');
+        }
     }
 
     public function store(Request $request)
@@ -30,16 +40,26 @@ class CategoryController extends Controller
             'slug' => 'required|string|max:255|alpha_dash'
         ]);
 
-        Category::create($validated);
+        $category = Category::create($validated);
 
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil dibuat!');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['category' => $category, 'message' => 'Kategori berhasil dibuat!']);
+        } else {
+            return redirect()->route('categories.index')->with('success', 'Kategori berhasil dibuat!');
+        }
     }
 
     public function edit(Category $category)
     {
-        return Inertia::render('Categories/Edit', [
-            'category' => $category,
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'category' => $category,
+            ]);
+        } else {
+            return Inertia::render('Categories/Edit', [
+                'category' => $category,
+            ]);
+        }
     }
 
     public function update(Request $request, Category $category)
@@ -51,13 +71,21 @@ class CategoryController extends Controller
 
         $category->update($validated);
 
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui!');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['category' => $category, 'message' => 'Kategori berhasil diperbarui!']);
+        } else {
+            return redirect()->route('categories.index')->with('success', 'Kategori berhasil diperbarui!');
+        }
     }
 
     public function destroy(Category $category)
     {
         $category->delete();
 
-        return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus.');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['message' => 'Kategori berhasil dihapus.']);
+        } else {
+            return redirect()->route('categories.index')->with('success', 'Kategori berhasil dihapus.');
+        }
     }
 }

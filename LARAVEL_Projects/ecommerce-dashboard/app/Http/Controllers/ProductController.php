@@ -39,20 +39,34 @@ class ProductController extends Controller
 
         $categories = Category::all();
 
-        return Inertia::render('Products/Index', [
-            'products' => $products,
-            'categories' => $categories,
-            'filters' => $request->only(['search', 'filter_price', 'filter_category', 'filter_stock']),
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'products' => $products,
+                'categories' => $categories,
+                'filters' => $request->only(['search', 'filter_price', 'filter_category', 'filter_stock']),
+            ]);
+        } else {
+            return Inertia::render('Products/Index', [
+                'products' => $products,
+                'categories' => $categories,
+                'filters' => $request->only(['search', 'filter_price', 'filter_category', 'filter_stock']),
+            ]);
+        }
     }
 
     public function create()
     {
         $categories = Category::all();
 
-        return Inertia::render('Products/Create', [
-            'categories' => $categories,
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'categories' => $categories,
+            ]);
+        } else {
+            return Inertia::render('Products/Create', [
+                'categories' => $categories,
+            ]);
+        }
     }
 
     public function store(Request $request)
@@ -74,18 +88,29 @@ class ProductController extends Controller
 
         }
 
-        Product::create($validated);
+        $product = Product::create($validated);
 
-        return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan!');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['product' => $product, 'message' => 'Produk berhasil ditambahkan!']);
+        } else {
+            return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan!');
+        }
     }
 
     public function edit(Product $product)
     {
         $categories = Category::all();
-        return Inertia::render('Products/Edit', [
-            'product' => $product,
-            'categories' => $categories,
-        ]);
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json([
+                'product' => $product,
+                'categories' => $categories,
+            ]);
+        } else {
+            return Inertia::render('Products/Edit', [
+                'product' => $product,
+                'categories' => $categories,
+            ]);
+        }
     }
 
     public function update(Request $request, Product $product)
@@ -120,7 +145,11 @@ class ProductController extends Controller
         // Ini agar data tetap terupdate meski tidak ganti gambar
         $product->update($validated);
 
-        return redirect()->route('products.index')->with('success', 'Produk berhasil diperbarui!');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['product' => $product, 'message' => 'Produk berhasil diperbarui!']);
+        } else {
+            return redirect()->route('products.index')->with('success', 'Produk berhasil diperbarui!');
+        }
     }
 
     public function destroy(Product $product)
@@ -133,7 +162,11 @@ class ProductController extends Controller
 
         $product->delete();
 
-        return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus.');
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['message' => 'Produk berhasil dihapus.']);
+        } else {
+            return redirect()->route('products.index')->with('success', 'Produk berhasil dihapus.');
+        }
     }
 
 }
