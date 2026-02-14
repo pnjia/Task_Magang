@@ -75,8 +75,48 @@ class UserController extends Controller
         }
     }
 
+    public function update(Request $request, User $user)
+    {
+        // Jika request API tanpa autentikasi, kembalikan JSON 401
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
+
+        if ($user->tenant_id !== auth()->user()->tenant_id) {
+            abort(403);
+        }
+
+        $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $updateData = [
+            'name' => $request->name,
+            'email' => $request->email,
+        ];
+
+        if ($request->filled('password')) {
+            $updateData['password'] = Hash::make($request->password);
+        }
+
+        $user->update($updateData);
+
+        if (request()->is('api/*') || request()->wantsJson()) {
+            return response()->json(['user' => $user, 'message' => 'User berhasil diperbarui.']);
+        } else {
+            return redirect()->route('users.index')->with('success', 'User berhasil diperbarui.');
+        }
+    }
+
     public function updateRole(Request $request, User $user)
     {
+        // Jika request API tanpa autentikasi, kembalikan JSON 401
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        }
+
         if ($user->tenant_id !== auth()->user()->tenant_id) {
             abort(403);
         }
