@@ -8,14 +8,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
-use Inertia\Response;
 
 class ProfileController extends Controller
 {
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): Response
+    public function edit(Request $request)
     {
         if (request()->is('api/*') || request()->wantsJson()) {
             return response()->json([
@@ -31,7 +30,7 @@ class ProfileController extends Controller
     /**
      * Update the user's profile information.
      */
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function update(ProfileUpdateRequest $request)
     {
         $request->user()->fill($request->validated());
 
@@ -51,7 +50,7 @@ class ProfileController extends Controller
     /**
      * Update the user's password.
      */
-    public function updatePassword(Request $request): RedirectResponse
+    public function updatePassword(Request $request)
     {
         $validated = $request->validate([
             'current_password' => ['required', 'current_password'],
@@ -72,7 +71,7 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request)
     {
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
@@ -80,12 +79,21 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        Auth::logout();
+        // Untuk request API (token-based) jangan panggil Auth::logout() karena
+        // guard mungkin RequestGuard (Sanctum) yang tidak punya method logout.
+        // Lakukan logout/session invalidation hanya untuk request web.
+        $isApi = request()->is('api/*') || request()->wantsJson();
+
+        if (!$isApi) {
+            Auth::logout();
+        }
 
         $user->delete();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        if (!$isApi) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         if (request()->is('api/*') || request()->wantsJson()) {
             return response()->json(['message' => 'Account deleted successfully.']);
