@@ -129,7 +129,11 @@ class TransactionController extends Controller
             ]);
 
             // Jika ada error (stok kurang / uang kurang), kembali ke kasir dengan pesan error
-            return back()->with('error', $e->getMessage());
+            if (request()->is('api/*') || request()->wantsJson()) {
+                return response()->json(['error' => $e->getMessage()], 400);
+            } else {
+                return back()->with('error', $e->getMessage());
+            }
         }
     }
 
