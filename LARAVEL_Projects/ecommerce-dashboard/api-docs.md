@@ -267,8 +267,16 @@ Detail user spesifik.
 Update user.
 
 **Auth**: Required (Sanctum)  
-**Body**: Field opsional seperti name, email, dll.  
-**Response**: JSON dengan data user terupdate.
+**Body**:
+```json
+{
+  "name": "Nama Baru",
+  "email": "email@baru.com",
+  "password": "password_baru",
+  "password_confirmation": "password_baru"
+}
+```
+**Response**: JSON dengan data user terupdate dan pesan sukses.
 
 #### DELETE /api/users/{id}
 Hapus user.
