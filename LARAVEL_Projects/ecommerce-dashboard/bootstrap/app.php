@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => CheckRole::class,
+            // API exception middleware alias
+            'api.exception' => \App\Http\Middleware\ApiExceptionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

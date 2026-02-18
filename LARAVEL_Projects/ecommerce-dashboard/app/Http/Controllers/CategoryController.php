@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class CategoryController extends Controller
@@ -15,7 +16,7 @@ class CategoryController extends Controller
 
         if (request()->is('api/*') || request()->wantsJson()) {
             return response()->json([
-                'categories' => $categories,
+                'data' => $categories,
             ]);
         } else {
             return Inertia::render('Categories/Index', [
@@ -37,8 +38,12 @@ class CategoryController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|alpha_dash'
+            'slug' => 'nullable|string|max:255|alpha_dash'
         ]);
+
+        if (empty($validated['slug'])) {
+            $validated['slug'] = Str::slug($validated['name']);
+        }
 
         $category = Category::create($validated);
 

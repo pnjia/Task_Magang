@@ -23,7 +23,8 @@ Route::post('/register', [RegisteredUserController::class, 'store']);
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->middleware('auth:sanctum');
 
 // API routes for resources
-Route::middleware('auth:sanctum')->group(function () {
+// Apply `api.exception` first so we convert unhandled server errors
+Route::middleware(['api.exception', 'auth:sanctum'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('api.dashboard');
 

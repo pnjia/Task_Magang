@@ -41,7 +41,7 @@ class ProductController extends Controller
 
         if (request()->is('api/*') || request()->wantsJson()) {
             return response()->json([
-                'products' => $products,
+                'data' => $products,
                 'categories' => $categories,
                 'filters' => $request->only(['search', 'filter_price', 'filter_category', 'filter_stock']),
             ]);
@@ -73,7 +73,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|alpha_dash',
+            'slug' => 'nullable|string|max:255|alpha_dash',
             'category_id' => ['required', Rule::exists('categories', 'id')],
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
@@ -81,17 +81,19 @@ class ProductController extends Controller
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
+        if (empty($validated['slug'])) {
+            $validated['slug'] = \Illuminate\Support\Str::slug($validated['name']);
+        }
+
         if ($request->hasFile('image')) {
             $filePath = $request->file('image')->store('products', 'public');
             $validated['image'] = $filePath;
-
-
         }
 
         $product = Product::create($validated);
 
         if (request()->is('api/*') || request()->wantsJson()) {
-            return response()->json(['product' => $product, 'message' => 'Produk berhasil ditambahkan!']);
+            return response()->json($product);
         } else {
             return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan!');
         }
@@ -104,9 +106,7 @@ class ProductController extends Controller
         }
 
         if (request()->is('api/*') || request()->wantsJson()) {
-            return response()->json([
-                'product' => $product->load('category'),
-            ]);
+            return response()->json($product->load('category'));
         } else {
             return Inertia::render('Products/Show', [
                 'product' => $product->load('category'),
